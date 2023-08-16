@@ -12,6 +12,7 @@ import "src/pools/vc/VeVC.sol";
 import "src/pools/converter/WETHConverter.sol";
 import "src/pools/linear-bribe/LinearBribeFactory.sol";
 import "src/pools/wombat/WombatPool.sol";
+import "src/pools/converter/RebaseWrapper.sol";
 import "src/MockERC20.sol";
 import "src/lens/Lens.sol";
 import "src/NFTHolderFacet.sol";
@@ -150,6 +151,8 @@ contract DeployScript is Script {
         MockERC20 dai = new MockERC20("DAI", "DAI");
         MockERC20 axlUSDC = new MockERC20("Axelar USDC", "axlUSDC");
 
+        RebaseWrapper rw = new RebaseWrapper(vault, toToken(dai), true);
+
         busd.mint(100000e18);
         busd.mint(100000e18);
         busd.transfer(0x12345206bb098B4E4B899732A6221d39e8721Fb9, 100000e18);
@@ -281,7 +284,7 @@ contract DeployScript is Script {
         vc.balanceOf(address(vault));
         wombat.addToken(toToken(IERC20(0xA74f301f527e949bEC8F8c711646BF46fbCb08da)), 18);
         wombat.addToken(toToken(IERC20(0xb7A4C531ca096C4b36E754663a76173287E34eE0)), 18);
-        wombat.addToken(toToken(dai), 18);
+        wombat.addToken(toToken(IERC20(address(rw))), 18);
 
         IERC20(0xA74f301f527e949bEC8F8c711646BF46fbCb08da).approve(address(vault), type(uint256).max);
         IERC20(0xb7A4C531ca096C4b36E754663a76173287E34eE0).approve(address(vault), type(uint256).max);
@@ -323,6 +326,7 @@ contract DeployScript is Script {
         console.log("WETHConverter: %s", address(wethConverter));
         console.log("lbf: %s", address(lbf));
         console.log("voter: %s", voter);
+        console.log("rw: %s", address(rw));
 
         return (vault, vc, veVC);
     }
