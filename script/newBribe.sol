@@ -52,7 +52,6 @@ contract UpgradeScript is Script {
         );
 
         console.log(address(lbf));
-
         */
         vm.stopBroadcast();
     }

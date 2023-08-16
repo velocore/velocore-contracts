@@ -310,6 +310,10 @@ contract DeployScript is Script {
         );
         veVC.approve(address(vf), type(uint256).max);
         address voter = vf.deploy(0x12345206bb098B4E4B899732A6221d39e8721Fb9, 100e18);
+        dai.approve(address(rw), type(uint256).max);
+        dai.mint(100000e18);
+        dai.transfer(address(vault), 10000e18);
+        run2(0, rw, 2, toToken(IERC20(address(rw))), 1, type(int128).max, toToken(dai), 0, 100e18);
         vm.stopBroadcast();
         //vm.stopBroadcast();
 
@@ -329,6 +333,27 @@ contract DeployScript is Script {
         console.log("rw: %s", address(rw));
 
         return (vault, vc, veVC);
+    }
+
+    function run2(uint256 value, IPool pool, uint8 method, Token t1, uint8 m1, int128 a1, Token t2, uint8 m2, int128 a2)
+        public
+    {
+        Token[] memory tokens = new Token[](2);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = (t1);
+        tokens[1] = (t2);
+
+        ops[0].poolId = bytes32(bytes1(method)) | bytes32(uint256(uint160(address(pool))));
+        ops[0].tokenInformations = new bytes32[](2);
+        ops[0].data = "";
+
+        ops[0].tokenInformations[0] =
+            bytes32(bytes1(0x00)) | bytes32(bytes2(uint16(m1))) | bytes32(uint256(uint128(uint256(int256(a1)))));
+        ops[0].tokenInformations[1] =
+            bytes32(bytes1(0x01)) | bytes32(bytes2(uint16(m2))) | bytes32(uint256(uint128(uint256(int256(a2)))));
+        vault.execute{value: value}(tokens, new int128[](2), ops);
     }
 
     function run3(

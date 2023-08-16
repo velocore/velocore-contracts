@@ -5,12 +5,13 @@ import "../PoolWithLPToken.sol";
 import "src/lib/RPow.sol";
 import "src/interfaces/IConverter.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 
 // un
-contract RebaseWrapper is IConverter, Pool, ReentrancyGuard {
+contract RebaseWrapper is IConverter, Pool, ReentrancyGuard, ERC20 {
     using TokenLib for Token;
     using UncheckedMemory for int128[];
     using UncheckedMemory for Token[];
@@ -21,9 +22,11 @@ contract RebaseWrapper is IConverter, Pool, ReentrancyGuard {
     uint256 immutable iR;
     uint256 immutable iW;
     bool immutable allowSkimming;
-    uint256 wrapperSupply;
 
-    constructor(IVault vault_, Token raw_, bool allowSkimming_) Pool(vault_, address(this), address(this)) {
+    constructor(IVault vault_, Token raw_, bool allowSkimming_)
+        Pool(vault_, address(this), address(this))
+        ERC20(string(abi.encodePacked("Wrapped ", ERC20(raw_.addr()).name())), string(abi.encodePacked("w", raw_.symbol())))
+    {
         raw = raw_;
         allowSkimming = allowSkimming_;
         uint256 iir;
@@ -54,52 +57,47 @@ contract RebaseWrapper is IConverter, Pool, ReentrancyGuard {
 
         if (rW == type(int128).max) {
             require(rR != type(int128).max && rR >= 0);
-            wrapperSupply += wrapperSupply * uint256(int256(rR)) / (raw.balanceOf(address(this)) - uint256(int256(rR)));
+            if (totalSupply() == 0) {
+                _mint(address(vault), uint256(int256(rR)));
+            } else {
+                _mint(
+                    address(vault),
+                    totalSupply() * uint256(int256(rR)) / (raw.balanceOf(address(this)) - uint256(int256(rR)))
+                );
+            }
         } else if (rR == type(int128).max) {
             require(rW != type(int128).max && rW >= 0);
-            wrapperSupply -= uint256(int256(rW));
+            _burn(address(this), uint256(int256(rW)));
             raw.transferFrom(
                 address(this),
                 address(vault),
-                raw.balanceOf(address(this)) * uint256(int256(rW)) / (wrapperSupply + uint256(int256(rW)))
+                raw.balanceOf(address(this)) * uint256(int256(rW)) / (totalSupply() + uint256(int256(rW)))
             );
         } else if (rW <= 0 && rR >= 0) {
-            uint256 requiredDeposit = Math.ceilDiv(raw.balanceOf(address(this)) * uint256(int256(-rW)), wrapperSupply);
-            wrapperSupply += uint256(int256(-rW));
+            uint256 requiredDeposit;
+            if (totalSupply() != 0) {
+                requiredDeposit = Math.ceilDiv(raw.balanceOf(address(this)) * uint256(int256(-rW)), totalSupply());
+            } else {
+                requiredDeposit = uint256(int256(-rW));
+            }
+            _mint(address(vault), uint256(int256(-rW)));
+            require(requiredDeposit <= uint256(int256(rR)));
             raw.transferFrom(address(this), address(vault), uint256(int256(rR)) - requiredDeposit);
         } else if (rW >= 0 && rR <= 0) {
-            uint256 diff = Math.ceilDiv(wrapperSupply * uint256(int256(-rR)), raw.balanceOf(address(this)));
+            uint256 diff = Math.ceilDiv(totalSupply() * uint256(int256(-rR)), raw.balanceOf(address(this)));
             require(diff <= uint256(int256(rW)));
-            wrapperSupply -= diff;
+            _burn(address(this), diff);
             raw.transferFrom(address(this), address(vault), uint256(int256(-rR)));
+            transfer(address(vault), balanceOf(address(this)));
         }
     }
 
-    function balanceOf(address addr) external view returns (uint256) {
-        if (addr == address(vault)) return wrapperSupply;
-        else return 0;
-    }
-
-    function transfer(address to, uint256 amount) public virtual returns (bool) {
-        transferFrom(msg.sender, to, amount);
-        return true;
-    }
-
-    function transferFrom(address from, address to, uint256 amount) public virtual returns (bool) {
-        require(from == address(vault) && to == address(this));
-        return true;
-    }
-
-    function symbol() external returns (string memory) {
-        return string(abi.encodePacked("w", raw.symbol()));
-    }
-
-    function decimals() external returns (uint8) {
+    function decimals() public view override returns (uint8) {
         return raw.decimals();
     }
 
     function skim() external nonReentrant {
         require(allowSkimming, "no skim allowed");
-        raw.transferFrom(address(this), msg.sender, raw.balanceOf(address(this)) - wrapperSupply);
+        raw.transferFrom(address(this), msg.sender, raw.balanceOf(address(this)) - totalSupply());
     }
 }
