@@ -234,6 +234,7 @@ contract SwapFacet is VaultStorage, IFacet {
                 emit Gauge(IGauge(opDst), user, opTokens, deltaGauge);
             } else if (opType == 2) {
                 // convert
+
                 uint256[] memory balances = new uint256[](opTokenLength);
                 for (uint256 j = 0; j < opTokenLength; j++) {
                     balances.u(j, opTokens.u(j).balanceOf(address(this)));
@@ -247,6 +248,7 @@ contract SwapFacet is VaultStorage, IFacet {
                 for (uint256 j = 0; j < opTokenLength; j++) {
                     require(-deltas.u(j) <= int128(uint128(uint256(opTokenInformations.u(j)))));
                     cumDelta[uint8(uint256(opTokenInformations.u(j) >> (256 - 8)))] += deltas.u(j);
+                    deltas.u(j, -deltas.u(j));
                 }
                 emit Convert(IConverter(opDst), user, opTokens, deltas);
             } else if (opType == 3) {
