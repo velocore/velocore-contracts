@@ -1,0 +1,35 @@
+pools: Pools {
+  Satellite: {
+    explanation: functions for accessing vault storage {
+      shape: package
+      style.multiple: true
+    }
+  }
+  Pool: {
+    explanation: functions for accessing pool-specific vault storage {
+      shape: package
+      style.multiple: true
+    }
+  }
+  ISwap.shape: oval
+  IGauge.shape: oval
+  IConverter.shape: oval
+  IBribe.shape: oval
+}
+pools.Satellite -> pools.Pool
+pools.Pool -> pools.poolUpgradeable
+pools.Pool -> pools.IGauge
+pools.Pool -> pools.ISwap
+pools.Pool -> pools.IConverter
+pools.Pool -> pools.IBribe
+
+vault: Vault
+vault.VaultStorage -> vault.SwapFacet
+vault.VaultStorage -> vault.AdminFacet
+
+pools.ISwap -> pools.ConstantProductPool
+pools.ISwap -> pools.WombatPool
+pools.IGauge -> pools.SingleTokenGauge
+pools.SingleTokenGauge -> pools.ConstantProductPool
+pools.PoolWithLPToken -> pools.ConstantProductPool
+pools.Pool -> pools.PoolWithLPToken

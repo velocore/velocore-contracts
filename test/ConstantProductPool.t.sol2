@@ -1,0 +1,126 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity ^0.8.19;
+
+import "forge-std/Test.sol";
+import "script/Deploy.s.sol";
+import "src/pools/constant-product/ConstantProductPool.sol";
+import "src/pools/constant-product/ConstantProductLibrary.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+
+contract MockVeVC is ERC20 {
+    constructor() ERC20("veLOL", "veLOL") {}
+
+    function mint(uint256 n) external {
+        _mint(msg.sender, n);
+    }
+}
+
+contract MockVault is SwapFacet {
+    constructor(IVC vc_, Token ballot_) SwapFacet(vc_, ballot_) {}
+
+    function setPoolBalance(IPool pool, Token tok, uint128 amount1, uint128 amount2) external {
+        _poolBalances()[pool][tok] = PoolBalanceLib.pack(amount1, amount2);
+    }
+
+    fallback() external {
+        assembly ("memory-safe") {
+            for { let i := 4 } lt(i, calldatasize()) { i := add(i, 0x20) } { mstore(i, sload(calldataload(i))) }
+            return(4, sub(calldatasize(), 4))
+        }
+    }
+}
+
+contract MockVC is IVC, ERC20 {
+    constructor() ERC20("lol", "lol") {}
+    function notifyMigration(uint128 n) external {}
+
+    function dispense() external override returns (uint256) {
+        _mint(msg.sender, 1e18 * 100);
+        return 1e18 * 100;
+    }
+
+    function emissionRate() external view override returns (uint256) {}
+}
+
+contract ConstantProductPoolTest is Test {
+    MockVault public vault;
+    VC public vc;
+    VeVC public veVC;
+    MockVeVC public usdc;
+    MockVeVC public ballot;
+    MockVeVC public btc;
+    ConstantProductPool cpmm;
+
+    function setUp() public {
+        vc = VC(address(new MockVC()));
+        ballot = new MockVeVC();
+        usdc = new MockVeVC();
+        btc = new MockVeVC();
+
+        vault = new MockVault(vc, toToken(ballot));
+        usdc.mint(type(uint128).max);
+        btc.mint(type(uint128).max);
+        usdc.approve(address(vault), type(uint256).max);
+        btc.approve(address(vault), type(uint256).max);
+        Token[] memory tokens = new Token[](2);
+        tokens[0] = toToken(btc);
+        tokens[1] = toToken(usdc);
+
+        uint256[] memory weights = new uint256[](2);
+        weights[0] = 1;
+        weights[1] = 2;
+        cpmm = new ConstantProductPool(
+            ConstantProductLibrary(address(new ConstantProductLibrary())), IVault(address(vault)), "pool1", "Pool", tokens, weights, 0.01e9);
+    }
+
+    function exec(int128 dLP, int128 dA, int128 dB) public returns (int128[] memory r) {
+        Token[] memory tokens = new Token[](3);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(cpmm);
+        tokens[1] = toToken(btc);
+        tokens[2] = toToken(usdc);
+
+        ops[0].poolId = bytes32(uint256(uint160(address(cpmm))));
+        ops[0].tokenInformations = new bytes32[](tokens.length);
+        ops[0].data = "";
+
+        ops[0].tokenInformations[0] = bytes32(bytes2(0x0000) | bytes32(uint256(uint128(uint256(int256(dLP))))));
+        ops[0].tokenInformations[1] = bytes32(bytes2(0x0100) | bytes32(uint256(uint128(uint256(int256(dA))))));
+        ops[0].tokenInformations[2] = bytes32(bytes2(0x0200) | bytes32(uint256(uint128(uint256(int256(dB))))));
+
+        vault.execute(tokens, new int128[](3), ops);
+    }
+
+    function exec2(int128 dLP, int128 dA) public returns (int128[] memory r) {
+        Token[] memory tokens = new Token[](2);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(cpmm);
+        tokens[1] = toToken(btc);
+
+        ops[0].poolId = bytes32(uint256(uint160(address(cpmm))));
+        ops[0].tokenInformations = new bytes32[](tokens.length);
+        ops[0].data = "";
+
+        ops[0].tokenInformations[0] = bytes32(bytes2(0x0000) | bytes32(uint256(uint128(uint256(int256(dLP))))));
+        ops[0].tokenInformations[1] = bytes32(bytes2(0x0100) | bytes32(uint256(uint128(uint256(int256(dA))))));
+
+        vault.execute(tokens, new int128[](2), ops);
+    }
+
+    function testFuzz_deposit2withdrawAll(int96 balA, int96 balB, int96 balC, int96 balD) public {
+        vm.assume(balA >= 10 && balB >= 10 && balC >= 10 && balD >= 10);
+        exec2(type(int128).max, int128(10000000) + balA);
+        exec2(int128(int256(cpmm.balanceOf(address(this)))), type(int128).max);
+    }
+
+    function testFuzz_depositswapwithdraw(int96 balA, int96 balB, uint96 ratio) public {
+        vm.assume(balA >= 10 && balB >= 10 && ratio >= 0);
+        exec(type(int128).max, balA, balB);
+        exec(0, int128(balA * int256(ratio / uint256(type(uint96).max))), type(int128).max);
+        exec(int128(int256(cpmm.balanceOf(address(this)))), type(int128).max, type(int128).max);
+    }
+}

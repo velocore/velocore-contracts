@@ -1,0 +1,196 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity ^0.8.19;
+
+import "src/lib/Token.sol";
+import "src/lib/PoolBalanceLib.sol";
+import "src/interfaces/IPool.sol";
+import "src/interfaces/ISwap.sol";
+import "src/interfaces/IConverter.sol";
+import "src/interfaces/IVC.sol";
+import "src/interfaces/IVault.sol";
+import "src/interfaces/IFacet.sol";
+import "src/VaultStorage.sol";
+import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+
+uint256 constant GAUGE_FLAG_KILLED = 1;
+
+contract SwapHelperFacet is VaultStorage, IFacet {
+    IVC immutable vc;
+    Token immutable ballot; // veVC
+    address immutable thisImplementation;
+
+    constructor(IVC vc_, Token ballot_) {
+        vc = vc_;
+        ballot = ballot_;
+        thisImplementation = address(this);
+    }
+
+    /**
+     * @dev called by AdminFacet.admin_addFacet().
+     * doesnt get added to the routing table, hence the lack of access control.
+     */
+    function initializeFacet() external {
+        _setFunction(SwapFacet.execute.selector, thisImplementation);
+    }
+
+    function execute1(IPool pool, uint8 method, address t1, uint8 m1, int128 a1, bytes memory data) internal {
+        Token[] memory tokens = new Token[](1);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(IERC20(t1));
+
+        ops[0].poolId = bytes32(bytes1(method)) | bytes32(uint256(uint160(address(pool))));
+        ops[0].tokenInformations = new bytes32[](1);
+        ops[0].data = data;
+
+        ops[0].tokenInformations[0] =
+            bytes32(bytes1(0x00)) | bytes32(bytes2(uint16(m1))) | bytes32(uint256(uint128(uint256(int256(a1)))));
+        vault.execute{value: value}(tokens, new int128[](1), ops);
+    }
+
+    function query1(IPool pool, uint8 method, address t1, uint8 m1, int128 a1, bytes memory data) internal {
+        Token[] memory tokens = new Token[](1);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(IERC20(t1));
+
+        ops[0].poolId = bytes32(bytes1(method)) | bytes32(uint256(uint160(address(pool))));
+        ops[0].tokenInformations = new bytes32[](1);
+        ops[0].data = data;
+
+        ops[0].tokenInformations[0] =
+            bytes32(bytes1(0x00)) | bytes32(bytes2(uint16(m1))) | bytes32(uint256(uint128(uint256(int256(a1)))));
+        return vault.query(tokens, new int128[](1), ops)[0];
+    }
+
+    function execute2(
+        IPool pool,
+        uint8 method,
+        address t1,
+        uint8 m1,
+        int128 a1,
+        address t2,
+        uint8 m2,
+        int128 a2,
+        bytes memory data
+    ) internal {
+        Token[] memory tokens = new Token[](2);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(IERC20(t1));
+        tokens[1] = toToken(IERC20(t2));
+
+        ops[0].poolId = bytes32(bytes1(method)) | bytes32(uint256(uint160(address(pool))));
+        ops[0].tokenInformations = new bytes32[](2);
+        ops[0].data = data;
+
+        ops[0].tokenInformations[0] =
+            bytes32(bytes1(0x00)) | bytes32(bytes2(uint16(m1))) | bytes32(uint256(uint128(uint256(int256(a1)))));
+        ops[0].tokenInformations[1] =
+            bytes32(bytes1(0x01)) | bytes32(bytes2(uint16(m2))) | bytes32(uint256(uint128(uint256(int256(a2)))));
+        vault.execute{value: value}(tokens, new int128[](2), ops);
+    }
+
+    function query2(
+        IPool pool,
+        uint8 method,
+        address t1,
+        uint8 m1,
+        int128 a1,
+        address t2,
+        uint8 m2,
+        int128 a2,
+        bytes memory data
+    ) external returns (int128 amountT2) {
+        Token[] memory tokens = new Token[](2);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(IERC20(t1));
+        tokens[1] = toToken(IERC20(t2));
+
+        ops[0].poolId = bytes32(bytes1(method)) | bytes32(uint256(uint160(address(pool))));
+        ops[0].tokenInformations = new bytes32[](2);
+        ops[0].data = data;
+
+        ops[0].tokenInformations[0] =
+            bytes32(bytes1(0x00)) | bytes32(bytes2(uint16(m1))) | bytes32(uint256(uint128(uint256(int256(a1)))));
+        ops[0].tokenInformations[1] =
+            bytes32(bytes1(0x01)) | bytes32(bytes2(uint16(m2))) | bytes32(uint256(uint128(uint256(int256(a2)))));
+        return vault.query(tokens, new int128[](2), ops)[1];
+    }
+
+    function execute3(
+        IPool pool,
+        uint8 method,
+        address t1,
+        uint8 m1,
+        int128 a1,
+        address t2,
+        uint8 m2,
+        int128 a2,
+        address t3,
+        uint8 m3,
+        int128 a3,
+        bytes memory data
+    ) internal {
+        Token[] memory tokens = new Token[](3);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(IERC20(t1));
+        tokens[1] = toToken(IERC20(t2));
+        tokens[2] = toToken(IERC20(t3));
+
+        ops[0].poolId = bytes32(bytes1(method)) | bytes32(uint256(uint160(address(pool))));
+        ops[0].tokenInformations = new bytes32[](3);
+        ops[0].data = data;
+
+        ops[0].tokenInformations[0] =
+            bytes32(bytes1(0x00)) | bytes32(bytes2(uint16(m1))) | bytes32(uint256(uint128(uint256(int256(a1)))));
+        ops[0].tokenInformations[1] =
+            bytes32(bytes1(0x01)) | bytes32(bytes2(uint16(m2))) | bytes32(uint256(uint128(uint256(int256(a2)))));
+        ops[0].tokenInformations[2] =
+            bytes32(bytes1(0x02)) | bytes32(bytes2(uint16(m3))) | bytes32(uint256(uint128(uint256(int256(a3)))));
+        vault.deleexecute{value: value}(tokens, new int128[](3), ops);
+    }
+
+    function query3(
+        IPool pool,
+        uint8 method,
+        address t1,
+        uint8 m1,
+        int128 a1,
+        address t2,
+        uint8 m2,
+        int128 a2,
+        address t3,
+        uint8 m3,
+        int128 a3,
+        bytes memory data
+    ) internal {
+        Token[] memory tokens = new Token[](3);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(IERC20(t1));
+        tokens[1] = toToken(IERC20(t2));
+        tokens[2] = toToken(IERC20(t3));
+
+        ops[0].poolId = bytes32(bytes1(method)) | bytes32(uint256(uint160(address(pool))));
+        ops[0].tokenInformations = new bytes32[](3);
+        ops[0].data = data;
+
+        ops[0].tokenInformations[0] =
+            bytes32(bytes1(0x00)) | bytes32(bytes2(uint16(m1))) | bytes32(uint256(uint128(uint256(int256(a1)))));
+        ops[0].tokenInformations[1] =
+            bytes32(bytes1(0x01)) | bytes32(bytes2(uint16(m2))) | bytes32(uint256(uint128(uint256(int256(a2)))));
+        ops[0].tokenInformations[2] =
+            bytes32(bytes1(0x02)) | bytes32(bytes2(uint16(m3))) | bytes32(uint256(uint128(uint256(int256(a3)))));
+        vault.execute{value: value}(tokens, new int128[](3), ops);
+    }
+}

@@ -1,0 +1,172 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity ^0.8.19;
+
+import "forge-std/Test.sol";
+import "forge-std/StdCheats.sol";
+import "script/Deploy.s.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+
+import {SingleTokenGauge} from "src/pools/SingleTokenGauge.sol";
+
+contract MockVeVC is ERC20 {
+    constructor() ERC20("veLOL", "veLOL") {}
+
+    function mint(uint256 n) external {
+        _mint(msg.sender, n);
+    }
+}
+/*
+contract SwapFacetHarness is SwapFacet {
+    using PoolBalanceLib for bytes32;
+
+    constructor(IVC vc_, Token ballot_) SwapFacet(vc_, ballot_) {}
+
+    function getPoolBalance(IPool pool, Token tok) external view returns (uint256) {
+        return _poolBalances()[pool][tok].secondU();
+    }
+
+    function getGaugeBalance(IPool pool, Token tok) external view returns (uint256) {
+        return _poolBalances()[pool][tok].firstU();
+    }
+}
+
+
+contract DumbPool is PoolWithLPToken {
+    constructor(IVault vault) Pool(vault) {
+        _initialize("lol", "asdf");
+    }
+
+    function velocore__execute(address user, Token[] calldata tokens, int128[] memory amounts, bytes calldata data)
+        external
+        override
+        returns (int128[] memory, int128[] memory)
+    {
+        return (new int128[](tokens.length), amounts);
+    }
+
+    function velocore__gauge(
+        address user,
+        uint128 newEmissions,
+        Token[] calldata tokens,
+        int128[] memory amounts,
+        bytes calldata data
+    ) external returns (int128[] memory deltaGauge, int128[] memory deltaPool) {
+        return (amounts, new int128[](tokens.length));
+    }
+
+    function exposed_getPoolBalance(Token tok) external returns (uint256) {
+        return _getPoolBalance(tok);
+    }
+}
+
+contract StubbornPool is Pool {
+    function velocore__execute(address user, Token[] calldata tokens, int128[] memory amounts, bytes calldata data)
+        external
+        override
+        returns (int128[] memory, int128[] memory)
+    {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            amounts[i] = 10000;
+        }
+        return (new int128[](tokens.length), amounts);
+    }
+}
+*/
+
+contract PoolTest is Test {
+    IVault public vault;
+    VC public vc;
+    VeVC public veVC;
+    MockVeVC public usdc;
+    MockVeVC public btc;
+    ConstantProductPool cpmm;
+
+    function setUp() public {
+        vm.warp(100000);
+        (vault, vc, veVC) = (new DeployScript()).run();
+        deal(address(veVC), address(this), 1 ether);
+        usdc = new MockVeVC();
+        btc = new MockVeVC();
+        usdc.mint(type(uint128).max);
+        btc.mint(type(uint128).max);
+        usdc.approve(address(vault), type(uint256).max);
+        btc.approve(address(vault), type(uint256).max);
+        Token[] memory tokens = new Token[](2);
+        tokens[1] = toToken(btc);
+        tokens[0] = toToken(usdc);
+
+        uint256[] memory weights = new uint256[](2);
+        weights[1] = 1;
+        weights[0] = 2;
+        cpmm = new ConstantProductPool(
+            ConstantProductLibrary(address(new ConstantProductLibrary())), IVault(address(vault)), "pool1", "Pool", tokens, weights, 0);
+        exec(type(int128).max, 1e18, 1e18);
+    }
+
+    function exec(int128 dLP, int128 dA, int128 dB) public returns (int128[] memory r) {
+        Token[] memory tokens = new Token[](3);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(cpmm);
+        tokens[1] = toToken(btc);
+        tokens[2] = toToken(usdc);
+
+        ops[0].poolId = bytes32(uint256(uint160(address(cpmm))));
+        ops[0].tokenInformations = new bytes32[](tokens.length);
+        ops[0].data = "";
+
+        ops[0].tokenInformations[0] = bytes32(bytes2(0x0000) | bytes32(uint256(uint128(uint256(int256(dLP))))));
+        ops[0].tokenInformations[1] = bytes32(bytes2(0x0100) | bytes32(uint256(uint128(uint256(int256(dA))))));
+        ops[0].tokenInformations[2] = bytes32(bytes2(0x0200) | bytes32(uint256(uint128(uint256(int256(dB))))));
+
+        r = vault.execute(tokens, new int128[](3), ops);
+    }
+
+    function vote(int128 dLP) public returns (int128[] memory r) {
+        Token[] memory tokens = new Token[](1);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(veVC);
+
+        ops[0].poolId = bytes32(bytes1(0x03)) | bytes32(uint256(uint160(address(cpmm))));
+        ops[0].tokenInformations = new bytes32[](tokens.length);
+        ops[0].data = "";
+
+        ops[0].tokenInformations[0] = bytes32(bytes2(0x0000) | bytes32(uint256(uint128(uint256(int256(dLP))))));
+
+        r = vault.execute(tokens, new int128[](1), ops);
+    }
+
+    function stake(int128 dLP) public returns (int128[] memory r) {
+        Token[] memory tokens = new Token[](2);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(cpmm);
+        tokens[1] = toToken(vc);
+
+        ops[0].poolId = bytes32(bytes1(0x01)) | bytes32(uint256(uint160(address(cpmm))));
+        ops[0].tokenInformations = new bytes32[](tokens.length);
+        ops[0].data = "";
+
+        ops[0].tokenInformations[0] = bytes32(bytes2(0x0000) | bytes32(uint256(uint128(uint256(int256(dLP))))));
+        ops[0].tokenInformations[1] = bytes32(bytes2(0x0100));
+
+        r = vault.execute(tokens, new int128[](2), ops);
+    }
+
+    function test1() public {
+        vm.warp(100000);
+        vote(112312541);
+        vote(112312541);
+        stake(123456112);
+        vm.warp(200000);
+        stake(0);
+    }
+}
+
+// use each of opType
+// test when emission > 0, emission == 0
+// test when vote > 0, vote == 0, vote < 0

@@ -1,0 +1,60 @@
+user: User {shape: person}
+vault: Diamond.yul {
+  routingTable: Routing Table {
+    shape: stored_data
+    style.multiple: true
+  }
+  poolBalances: Pool Balances {
+    shape: stored_data
+    style.multiple: true
+  }
+  tokens: All Tokens {
+    shape: circle
+    style.multiple: true
+  }
+}
+swapFacet: SwapFacet {
+  execute: execute {
+    shape: rectangle
+  }
+}
+adminFacet: AdminFacet {
+  adminFunctions: admin functions {
+    shape: rectangle
+    style.multiple: true
+  }
+}
+
+ISWap: Swap Pools {
+  functions: |md
+    - `velocore__execute()`
+  |
+  style.multiple: true
+}
+IGauge: Gauge Pools {
+  functions: |md
+    - `velocore__gauge()`
+    - `velocore__emission()`
+  |
+  style.multiple: true
+}
+IBribe: Bribe Pools {
+  functions: |md
+    - `velocore__bribe()`
+  |
+  style.multiple: true
+}
+IConverter: Converter Pools {
+  functions: |md
+    - `velocore__convert()`
+  |
+  style.multiple: true
+}
+user -> vault: send transaction
+user <-> vault: token transfer
+vault.routingTable -> adminFacet: delegatecall
+vault.routingTable -> swapFacet: delegatecall
+swapFacet.execute -> ISwap: call
+swapFacet.execute -> IGauge: call
+swapFacet.execute -> IBribe: call
+swapFacet.execute -> IConverter: call
