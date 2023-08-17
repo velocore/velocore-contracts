@@ -28,7 +28,7 @@ contract LinearVesting is ReentrancyGuard {
         registered[addr] = true;
     }
 
-    function claimVesting(address addr) public nonReentrant returns (uint256) {
+    function claim3(address addr) public nonReentrant returns (uint256) {
         require(registered[addr]);
         uint256 vested = 0;
         if (block.timestamp < vestBeginning) {
@@ -163,24 +163,23 @@ contract OverflowICO is Ownable, ReentrancyGuard, LinearVesting {
         emit Commit(msg.sender, msg.value);
     }
 
-    function simulateClaim() external returns (uint256, uint256, uint256) {
+    function simulateClaim(address user) external returns (uint256, uint256, uint256) {
         _updateEmission();
-        if (finalTokens[msg.sender] > 0) {
-            return (0, finalTokens[msg.sender], finalEmissions[msg.sender]);
+        if (finalTokens[user] > 0) {
+            return (0, finalTokens[user], finalEmissions[user]);
         }
 
-        if (commitments[msg.sender] == 0) return (0, 0, 0);
+        if (commitments[user] == 0) return (0, 0, 0);
 
         if (totalCommitments >= refundThreshold) {
-            uint256 ethersToSpend =
-                Math.min(commitments[msg.sender], (commitments[msg.sender] * ethersToRaise) / totalCommitments);
-            uint256 ethersToRefund = commitments[msg.sender] - ethersToSpend;
+            uint256 ethersToSpend = Math.min(commitments[user], (commitments[user] * ethersToRaise) / totalCommitments);
+            uint256 ethersToRefund = commitments[user] - ethersToSpend;
             uint256 tokensToReceive = (tokensToSell * ethersToSpend) / ethersToRaise;
-            uint256 emission = calculateEmission(commitments[msg.sender]) - missedEmissions[msg.sender];
+            uint256 emission = calculateEmission(commitments[user]) - missedEmissions[user];
 
             return (ethersToRefund, tokensToReceive, emission);
         } else {
-            uint256 amt = commitments[msg.sender];
+            uint256 amt = commitments[user];
             return (amt, 0, 0);
         }
     }
@@ -254,9 +253,5 @@ contract OverflowICO is Ownable, ReentrancyGuard, LinearVesting {
     function donate() external payable {
         // Anyone can donate a few gwei to fix integer division accuracy issues.
         // Typically, the deployer will call this.
-    }
-
-    function recover() external onlyOwner {
-        require(block.timestamp > endTime + 7 days);
     }
 }
