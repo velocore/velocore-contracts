@@ -88,7 +88,7 @@ contract RebaseWrapper is IConverter, Pool, ReentrancyGuard, ERC20 {
             require(diff <= uint256(int256(rW)));
             _burn(address(this), diff);
             raw.transferFrom(address(this), address(vault), uint256(int256(-rR)));
-            transfer(address(vault), balanceOf(address(this)));
+            transfer(address(vault), uint256(int256(rW)) - diff);
         }
     }
 
@@ -99,5 +99,40 @@ contract RebaseWrapper is IConverter, Pool, ReentrancyGuard, ERC20 {
     function skim() external nonReentrant {
         require(allowSkimming, "no skim allowed");
         raw.transferFrom(address(this), msg.sender, raw.balanceOf(address(this)) - totalSupply());
+    }
+
+    function depositExactOut(uint256 amountOut) external nonReentrant {
+        uint256 requiredDeposit;
+        if (totalSupply() != 0) {
+            requiredDeposit = Math.ceilDiv(raw.balanceOf(address(this)) * uint256(int256(amountOut)), totalSupply());
+        } else {
+            requiredDeposit = amountOut;
+        }
+
+        _mint(msg.sender, amountOut);
+        raw.safeTransferFrom(msg.sender, address(this), requiredDeposit);
+    }
+
+    function depositExactIn(uint256 amountIn) external nonReentrant {
+        uint256 amountOut;
+        if (totalSupply() != 0) {
+            amountOut = totalSupply() * amountIn / raw.balanceOf(address(this));
+        } else {
+            amountOut = amountIn;
+        }
+        _mint(msg.sender, amountOut);
+        raw.safeTransferFrom(msg.sender, address(this), amountIn);
+    }
+
+    function withdrawExactOut(uint256 amountOut) external nonReentrant {
+        uint256 amountIn = Math.ceilDiv(totalSupply() * amountOut, raw.balanceOf(address(this)));
+        _burn(msg.sender, amountIn);
+        raw.transferFrom(address(this), msg.sender, amountOut);
+    }
+
+    function withdrawExactIn(uint256 amountIn) external nonReentrant {
+        uint256 amountOut = raw.balanceOf(address(this)) * amountIn / totalSupply();
+        _burn(msg.sender, amountIn);
+        raw.transferFrom(address(this), msg.sender, amountOut);
     }
 }

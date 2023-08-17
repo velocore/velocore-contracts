@@ -152,6 +152,7 @@ contract DeployScript is Script {
         MockERC20 axlUSDC = new MockERC20("Axelar USDC", "axlUSDC");
 
         RebaseWrapper rw = new RebaseWrapper(vault, toToken(dai), true);
+        RebaseWrapper rw2 = new RebaseWrapper(vault, toToken(IERC20(0xb7A4C531ca096C4b36E754663a76173287E34eE0)), true);
 
         busd.mint(100000e18);
         busd.mint(100000e18);
@@ -283,7 +284,7 @@ contract DeployScript is Script {
         vc.transfer(0x12345206bb098B4E4B899732A6221d39e8721Fb9, 100e18);
         vc.balanceOf(address(vault));
         wombat.addToken(toToken(IERC20(0xA74f301f527e949bEC8F8c711646BF46fbCb08da)), 18);
-        wombat.addToken(toToken(IERC20(0xb7A4C531ca096C4b36E754663a76173287E34eE0)), 18);
+        wombat.addToken(toToken(IERC20(address(rw2))), 18);
         wombat.addToken(toToken(IERC20(address(rw))), 18);
 
         IERC20(0xA74f301f527e949bEC8F8c711646BF46fbCb08da).approve(address(vault), type(uint256).max);
@@ -312,8 +313,7 @@ contract DeployScript is Script {
         address voter = vf.deploy(0x12345206bb098B4E4B899732A6221d39e8721Fb9, 100e18);
         dai.approve(address(rw), type(uint256).max);
         dai.mint(100000e18);
-        dai.transfer(address(vault), 10000e18);
-        run2(0, rw, 2, toToken(IERC20(address(rw))), 1, type(int128).max, toToken(dai), 0, 100e18);
+
         vm.stopBroadcast();
         //vm.stopBroadcast();
 
@@ -331,6 +331,7 @@ contract DeployScript is Script {
         console.log("lbf: %s", address(lbf));
         console.log("voter: %s", voter);
         console.log("rw: %s", address(rw));
+        console.log("rw2: %s", address(rw2));
 
         return (vault, vc, veVC);
     }
