@@ -104,6 +104,7 @@ contract OverflowICO is Ownable, ReentrancyGuard, LinearVesting {
         uint256 _startTime,
         uint256 _endTime,
         uint256 _receiveTime,
+        uint256 _vestingBegin,
         uint256 _vestingDuration,
         uint256 _vestingProportion,
         uint256 _minCommit,
@@ -111,7 +112,7 @@ contract OverflowICO is Ownable, ReentrancyGuard, LinearVesting {
         IERC20 _emissionToken,
         uint256 _totalEmission,
         address _burnAddress
-    ) LinearVesting(_salesToken, _receiveTime, _vestingDuration) {
+    ) LinearVesting(_salesToken, _vestingBegin, _vestingDuration) {
         require(_startTime >= block.timestamp, "Start time must be in the future.");
         require(_endTime > _startTime, "End time must be greater than start time.");
         require(_ethersToRaise > 0, "Ethers to raise should be greater than 0");
