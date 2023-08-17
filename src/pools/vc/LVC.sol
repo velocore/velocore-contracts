@@ -113,6 +113,7 @@ contract LVC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
         initialMint = true;
 
         r[0] = -INITIAL_SUPPLY.toInt256().toInt128();
+        return (new int128[](1), r);
     }
 
     function swapType() external view override returns (string memory) {
