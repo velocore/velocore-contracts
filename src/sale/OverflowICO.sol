@@ -220,7 +220,7 @@ contract OverflowICO is Ownable, ReentrancyGuard, LinearVesting {
         require(block.timestamp >= receiveTime, "not claimable yet");
         uint256 a1 = finalTokens[msg.sender];
         uint256 a2 = finalEmissions[msg.sender];
-
+        require(a1 != 0 || a2 != 0);
         finalTokens[msg.sender] = 0;
         finalEmissions[msg.sender] = 0;
 
