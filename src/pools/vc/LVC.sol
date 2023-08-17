@@ -10,6 +10,7 @@ import "../SatelliteUpgradeable.sol";
 
 uint256 constant DECAY = 999999983382381333; // (0.99)^(1/(seconds in a week)) * 1e18
 uint256 constant START = 1692874800;
+uint256 constant INITIAL_SUPPLY = 100_000_000e18;
 /**
  * @dev The emission token of Velocore.
  *
@@ -32,6 +33,7 @@ contract LVC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
     Token immutable oldVC;
     address immutable veVC;
     bool initialized;
+    bool initialMint;
 
     constructor(address selfAddr, IVault vault_, Token oldVC_, address veVC_) Pool(vault_, selfAddr, address(this)) {
         oldVC = oldVC_;
@@ -60,12 +62,12 @@ contract LVC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
         _balanceOf[address(vault)] += n; // mint vc to the vault to simulate vc locking.
         _simulateMint(n);
     }
+
     /**
      * called by the vault.
      * (maxSupply - mintedSupply) decays 1% by every week.
      * @return newlyMinted amount of VCs to be distributed to gauges
      */
-
     function dispense() external onlyVault returns (uint256) {
         unchecked {
             uint256 emitted;
@@ -105,7 +107,12 @@ contract LVC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
         onlyVault
         returns (int128[] memory, int128[] memory)
     {
-        revert();
+        require(!initialMint && user == address(uint160(uint256(_readVaultStorage(SSLOT_HYPERCORE_TREASURY)))));
+        require(tokens.length == 1 && tokens[0] == toToken(this));
+
+        initialMint = true;
+
+        r[0] = -INITIAL_SUPPLY.toInt256().toInt128();
     }
 
     function swapType() external view override returns (string memory) {
