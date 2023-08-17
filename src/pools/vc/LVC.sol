@@ -5,10 +5,11 @@ import "../PoolWithLPToken.sol";
 import "src/lib/RPow.sol";
 import "src/interfaces/IVC.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import "../SatelliteUpgradeable.sol";
 
 uint256 constant DECAY = 999999983382381333; // (0.99)^(1/(seconds in a week)) * 1e18
-
+uint256 constant START = 1692874800;
 /**
  * @dev The emission token of Velocore.
  *
@@ -17,6 +18,7 @@ uint256 constant DECAY = 999999983382381333; // (0.99)^(1/(seconds in a week)) *
  * - when called by vault, emits VC on an exponentially decaying schedule
  *
  */
+
 contract LVC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
     event Migrated(address indexed user, uint256 amount);
 

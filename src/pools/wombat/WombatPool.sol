@@ -57,7 +57,7 @@ contract WombatPool is ISwap, IBribe, Pool, ERC1155 {
         ERC1155(
             string(
                 abi.encodePacked(
-                    "https://api.velocore.xyz/metadata/",
+                    "https://static.velocore.xyz/metadata/",
                     block.chainid.toString(),
                     "/",
                     address(this).toHexString(),
