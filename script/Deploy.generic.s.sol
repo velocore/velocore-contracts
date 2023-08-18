@@ -107,32 +107,40 @@ contract WETH9 is IWETH {
 }
 
 contract DeployScript is Script {
-    Deployer deployer;
-    Placeholder placeholder_;
-    IVault vault;
-    VC vc;
-    VeVC veVC;
-    MockERC20 oldVC;
-    WombatPool wombat;
-    ConstantProductPoolFactory cpf;
+    Deployer public deployer;
+    Placeholder public placeholder_;
+    IVault public vault;
+    VC public vc;
+    VeVC public veVC;
+    MockERC20 public oldVC;
+    WombatPool public wombat;
+    ConstantProductPoolFactory public cpf;
+    IAuthorizer public auth;
+    AdminFacet public adminFacet;
+    WombatRegistry public reg;
+    LinearBribeFactory public lbf;
+    WETH9 public weth;
+    WETHConverter public wethConverter;
+    ConstantProductLibrary public cpl;
+    VelocoreLens public lens;
 
     function setUp() public {}
 
-    function run() public returns (IVault, VC, VeVC) {
+    function run() public {
         uint256 deployerPrivateKey = vm.envUint("VELOCORE_DEPLOYER");
         vm.startBroadcast(deployerPrivateKey);
         deployer = new Deployer();
         placeholder_ = new Placeholder();
-        IAuthorizer auth = new SimpleAuthorizer();
-        AdminFacet adminFacet = new AdminFacet(auth, 0x1234561fEd41DD2D867a038bBdB857f291864225);
+        auth = new SimpleAuthorizer();
+        adminFacet = new AdminFacet(auth, 0x1234561fEd41DD2D867a038bBdB857f291864225);
         vault = IVault(adminFacet.deploy(vm.getCode("Diamond.yul:Diamond")));
         vc = VC(placeholder());
         veVC = VeVC(placeholder());
         oldVC = new MockERC20("Velocore", "VC (old)");
-        WombatRegistry reg = new WombatRegistry(vault);
-        LinearBribeFactory lbf = new LinearBribeFactory(vault);
-        WETH9 weth = new WETH9();
-        WETHConverter wethConverter = new WETHConverter(vault, weth);
+        reg = new WombatRegistry(vault);
+        lbf = new LinearBribeFactory(vault);
+        weth = new WETH9();
+        wethConverter = new WETHConverter(vault, weth);
         lbf.setFeeToken(toToken(veVC));
         lbf.setFeeAmount(1000e18);
         lbf.setTreasury(0x1234561fEd41DD2D867a038bBdB857f291864225);
@@ -144,11 +152,11 @@ contract DeployScript is Script {
         oldVC.mint(100000000e18);
         oldVC.approve(address(vault), type(uint256).max);
 
-        ConstantProductLibrary cpl = new ConstantProductLibrary();
+        cpl = new ConstantProductLibrary();
 
         cpf = new ConstantProductPoolFactory(vault, cpl);
         cpf.setFee(0.01e9);
-        VelocoreLens lens = VelocoreLens(address(new Lens(vault)));
+        lens = VelocoreLens(address(new Lens(vault)));
 
         Lens(address(lens)).upgrade(
             address(new VelocoreLens(NATIVE_TOKEN, vc, ConstantProductPoolFactory(address(cpf)), reg))
@@ -169,8 +177,8 @@ contract DeployScript is Script {
             abi.encodeWithSelector(VeVC.initialize.selector)
         );
 
-        migrateVC(100000000e18);
-        lockVC(10000e18);
+        run2(0, vc, 0, toToken(oldVC), 0, 1000000e18, toToken(vc), 1, 0);
+        run2(0, veVC, 0, toToken(vc), 0, 1000e18, toToken(veVC), 1, 0);
 
         cpf.deploy(NATIVE_TOKEN, toToken(vc));
         cpf.deploy(toToken(veVC), toToken(vc));
@@ -189,147 +197,62 @@ contract DeployScript is Script {
         console.log("LinearBribeFactory: %s", address(lbf));
         console.log("WETH: %s", address(weth));
         console.log("WETHConverter: %s", address(wethConverter));
-
-        return (vault, vc, veVC);
-    }
-
-    function deployPool(address addr) internal {
-        IERC20(addr).approve(address(vault), type(uint256).max);
-        cpf.deploy(NATIVE_TOKEN, toToken(IERC20(addr)));
-        vote(cpf.pools(NATIVE_TOKEN, toToken(IERC20(addr))), 100e18);
     }
 
     function run3(
         uint256 value,
         IPool pool,
         uint8 method,
-        IERC20 t1,
-        IERC20 t2,
-        IERC20 t3,
-        uint8 m1,
+        Token t1, //token
+        uint8 m1, //method
+        int128 a1, //amount
+        Token t2,
         uint8 m2,
-        uint8 m3,
-        int128 a1,
         int128 a2,
+        Token t3,
+        uint8 m3,
         int128 a3
     ) public {
         Token[] memory tokens = new Token[](3);
 
         VelocoreOperation[] memory ops = new VelocoreOperation[](1);
 
-        tokens[0] = toToken(t1);
-        tokens[1] = toToken(t2);
-        tokens[2] = toToken(t3);
+        tokens[0] = (t1);
+        tokens[1] = (t2);
+        tokens[2] = (t3);
 
         ops[0].poolId = bytes32(bytes1(method)) | bytes32(uint256(uint160(address(pool))));
         ops[0].tokenInformations = new bytes32[](3);
         ops[0].data = "";
 
         ops[0].tokenInformations[0] =
-            bytes32(bytes1(0x00)) | bytes32(uint256(m1) << 8) | bytes32(uint256(uint128(uint256(int256(a1)))));
+            bytes32(bytes1(0x00)) | bytes32(bytes2(uint16(m1))) | bytes32(uint256(uint128(uint256(int256(a1)))));
         ops[0].tokenInformations[1] =
-            bytes32(bytes1(0x01)) | bytes32(uint256(m2) << 8) | bytes32(uint256(uint128(uint256(int256(a2)))));
+            bytes32(bytes1(0x01)) | bytes32(bytes2(uint16(m2))) | bytes32(uint256(uint128(uint256(int256(a2)))));
         ops[0].tokenInformations[2] =
-            bytes32(bytes1(0x02)) | bytes32(uint256(m3) << 8) | bytes32(uint256(uint128(uint256(int256(a3)))));
+            bytes32(bytes1(0x02)) | bytes32(bytes2(uint16(m3))) | bytes32(uint256(uint128(uint256(int256(a3)))));
         vault.execute{value: value}(tokens, new int128[](3), ops);
     }
 
-    function run2(
-        uint256 value,
-        IPool pool,
-        uint8 method,
-        IERC20 t1,
-        IERC20 t2,
-        uint8 m1,
-        uint8 m2,
-        int128 a1,
-        int128 a2
-    ) public {
+    function run2(uint256 value, IPool pool, uint8 method, Token t1, uint8 m1, int128 a1, Token t2, uint8 m2, int128 a2)
+        public
+    {
         Token[] memory tokens = new Token[](2);
 
         VelocoreOperation[] memory ops = new VelocoreOperation[](1);
 
-        tokens[0] = toToken(t1);
-        tokens[1] = toToken(t2);
+        tokens[0] = (t1);
+        tokens[1] = (t2);
 
         ops[0].poolId = bytes32(bytes1(method)) | bytes32(uint256(uint160(address(pool))));
         ops[0].tokenInformations = new bytes32[](2);
         ops[0].data = "";
 
         ops[0].tokenInformations[0] =
-            bytes32(bytes1(0x00)) | bytes32(uint256(m1) << 8) | bytes32(uint256(uint128(uint256(int256(a1)))));
+            bytes32(bytes1(0x00)) | bytes32(bytes2(uint16(m1))) | bytes32(uint256(uint128(uint256(int256(a1)))));
         ops[0].tokenInformations[1] =
-            bytes32(bytes1(0x01)) | bytes32(uint256(m2) << 8) | bytes32(uint256(uint128(uint256(int256(a2)))));
+            bytes32(bytes1(0x01)) | bytes32(bytes2(uint16(m2))) | bytes32(uint256(uint128(uint256(int256(a2)))));
         vault.execute{value: value}(tokens, new int128[](2), ops);
-    }
-
-    function migrateVC(int128 amount) public {
-        Token[] memory tokens = new Token[](2);
-
-        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
-
-        tokens[0] = toToken(vc);
-        tokens[1] = toToken(oldVC);
-
-        ops[0].poolId = bytes32(uint256(uint160(address(vc))));
-        ops[0].tokenInformations = new bytes32[](tokens.length);
-        ops[0].data = "";
-
-        ops[0].tokenInformations[0] = bytes32(bytes2(0x0000) | bytes32(uint256(uint128(uint256(int256(-amount))))));
-        ops[0].tokenInformations[1] = bytes32(bytes2(0x0100) | bytes32(uint256(uint128(uint256(int256(amount))))));
-
-        vault.execute(tokens, new int128[](2), ops);
-    }
-
-    function lockVC(int128 amount) public {
-        Token[] memory tokens = new Token[](2);
-
-        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
-
-        tokens[0] = toToken(veVC);
-        tokens[1] = toToken(vc);
-
-        ops[0].poolId = bytes32(uint256(uint160(address(veVC))));
-        ops[0].tokenInformations = new bytes32[](tokens.length);
-        ops[0].data = "";
-
-        ops[0].tokenInformations[0] = bytes32(bytes2(0x0000) | bytes32(uint256(uint128(uint256(int256(-amount))))));
-        ops[0].tokenInformations[1] = bytes32(bytes2(0x0100) | bytes32(uint256(uint128(uint256(int256(amount))))));
-
-        vault.execute(tokens, new int128[](2), ops);
-    }
-
-    function vote(IGauge gauge, int128 amount) public {
-        Token[] memory tokens = new Token[](1);
-
-        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
-
-        tokens[0] = toToken(veVC);
-
-        ops[0].poolId = bytes32(bytes1(0x03)) | bytes32(uint256(uint160(address(gauge))));
-        ops[0].tokenInformations = new bytes32[](tokens.length);
-        ops[0].data = "";
-
-        ops[0].tokenInformations[0] = bytes32(bytes2(0x0000) | bytes32(uint256(uint128(uint256(int256(amount))))));
-
-        vault.execute(tokens, new int128[](1), ops);
-    }
-
-    function wombatSwap(Token t1, Token t2, int128 a1, int128 a2) public {
-        Token[] memory tokens = new Token[](2);
-
-        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
-
-        tokens[0] = t1;
-        tokens[1] = t2;
-
-        ops[0].poolId = bytes32(uint256(uint160(address(wombat))));
-        ops[0].tokenInformations = new bytes32[](tokens.length);
-        ops[0].data = "";
-
-        ops[0].tokenInformations[0] = bytes32(bytes2(0x0000) | bytes32(uint256(uint128(uint256(int256(a1))))));
-        ops[0].tokenInformations[1] = bytes32(bytes2(0x0100) | bytes32(uint256(uint128(uint256(int256(a2))))));
-        vault.execute(tokens, new int128[](2), ops);
     }
 
     function placeholder() internal returns (address) {

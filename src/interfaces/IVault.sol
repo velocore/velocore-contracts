@@ -79,4 +79,10 @@ interface IVault {
     function admin_pause(bool t) external;
     function admin_setTreasury(address treasury) external;
     function inspect(address lens, bytes memory data) external;
+
+    function factory() external view returns (address);
+    function lens() external view returns (address);
+    function wombatRegistry() external view returns (address);
+    
+    
 }

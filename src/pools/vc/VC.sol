@@ -99,18 +99,16 @@ contract VC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
         require(
             (tokens.length == 2) && (iOldVC != type(uint256).max) && (iVC != type(uint256).max), "unsupported tokens"
         );
-        require(r[iOldVC] >= 0 && r[iVC] <= 0, "wrong direction");
-        require(
-            (r[iOldVC] == type(int128).max) || (r[iVC] == type(int128).max) || (r[iOldVC] + r[iVC] == 0),
-            "VC can only be exchanged 1:1"
-        );
 
         int128[] memory deltaPool = new int128[](2);
 
         deltaPool[iOldVC] = r[iOldVC] == type(int128).max ? -r[iVC] : r[iOldVC];
         deltaPool[iVC] = r[iVC] == type(int128).max ? -r[iOldVC] : r[iVC];
 
-        uint128 minted = int256(-r[iVC]).toUint256().toUint128();
+        require(deltaPool[iOldVC] >= 0 && deltaPool[iVC] <= 0, "wrong direction");
+        require(deltaPool[iOldVC] + deltaPool[iVC] == 0, "VC can only be exchanged 1:1");
+
+        uint128 minted = int256(-deltaPool[iVC]).toUint256().toUint128();
         emit Migrated(user, minted);
         _totalSupply += minted;
         _simulateMint(minted);

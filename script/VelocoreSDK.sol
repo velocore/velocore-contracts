@@ -5,11 +5,13 @@ import "src/interfaces/IVault.sol";
 import "src/interfaces/IFactory.sol";
 import "src/interfaces/IPool.sol";
 
-contract Example {
+contract VelocoreSDK {
     using TokenLib for Token;
 
-    IVault vault = IVault(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535);
-    IFactory factory = IFactory(0xBe6c6A389b82306e88d74d1692B67285A9db9A47);
+    Token constant NATIVE_TOKEN = Token.wrap(0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
+
+    IVault immutable vault;
+    IFactory immutable factory;
 
     uint8 constant SWAP = 0;
     uint8 constant GAUGE = 1;
@@ -18,33 +20,9 @@ contract Example {
     uint8 constant AT_MOST = 1;
     uint8 constant ALL = 1;
 
-    function run() external {
-        Token usdc = toToken(IERC20(0x176211869cA2b568f2A7D4EE941E073a821EE1ff));
-        Token vc = toToken(IERC20(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1));
-        Token eth = Token.wrap(0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee);
-        IPool usdc_eth_pool = IPool(factory.pools(usdc, eth));
-        Token usdc_eth_lp = toToken(IERC20(address(usdc_eth_pool)));
-
-        IERC20(0x176211869cA2b568f2A7D4EE941E073a821EE1ff).approve(address(vault), type(uint256).max);
-        // you can optimize gas by batching operations.
-        // this example will execute them separately for clarity
-
-        //swap usdc->eth
-        run2(0, usdc_eth_pool, SWAP, usdc, EXACTLY, 0.1e6, eth, AT_MOST, 0);
-
-        //add lp and stake
-        run3(0.001e18, usdc_eth_pool, SWAP, usdc, EXACTLY, 0.1e6, eth, ALL, type(int128).max, usdc_eth_lp, AT_MOST, 0);
-        run2(
-            0,
-            usdc_eth_pool,
-            GAUGE,
-            usdc_eth_lp,
-            EXACTLY,
-            int128(int256(usdc_eth_lp.balanceOf(address(this)))),
-            vc,
-            AT_MOST,
-            0
-        );
+    constructor(IVault vault_) {
+        vault = vault_;
+        factory = IFactory(vault.factory());
     }
 
     function run3(
@@ -60,7 +38,7 @@ contract Example {
         Token t3,
         uint8 m3,
         int128 a3
-    ) public {
+    ) internal {
         Token[] memory tokens = new Token[](3);
 
         VelocoreOperation[] memory ops = new VelocoreOperation[](1);
@@ -83,7 +61,7 @@ contract Example {
     }
 
     function run2(uint256 value, IPool pool, uint8 method, Token t1, uint8 m1, int128 a1, Token t2, uint8 m2, int128 a2)
-        public
+        internal
     {
         Token[] memory tokens = new Token[](2);
 
