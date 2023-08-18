@@ -7,27 +7,30 @@ import "src/interfaces/IPool.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 contract SwapFacetHarness is SwapFacet {
-    using PoolBalanceLib for bytes32;
+    using PoolBalanceLib for PoolBalance;
 
     constructor(IVC vc_, Token ballot_) SwapFacet(vc_, ballot_) {}
 
     function getPoolBalance(IPool pool, Token tok) external view returns (uint256) {
-        return _poolBalances()[pool][tok].secondU();
+        return _poolBalances()[pool][tok].poolHalf();
     }
 
     function getGaugeBalance(IPool pool, Token tok) external view returns (uint256) {
-        return _poolBalances()[pool][tok].firstU();
+        return _poolBalances()[pool][tok].gaugeHalf();
     }
 }
 
 contract MockVC is IVC, ERC20 {
     constructor() ERC20("lol", "lol") {}
+
     function notifyMigration(uint128 n) external override {}
 
     function dispense() external override returns (uint256) {
         _mint(msg.sender, 1e18 * 100);
         return 1e18 * 100;
     }
+
+    function emissionRate() external view override returns (uint256) {}
 }
 
 contract MockVeVC is ERC20 {
@@ -38,30 +41,27 @@ contract MockVeVC is ERC20 {
     }
 }
 
-contract DumbPool is IPool {
+contract DumbPool {
     function velocore__execute(address user, Token[] calldata tokens, int128[] memory amounts, bytes calldata data)
         external
-        override
         returns (int128[] memory, int128[] memory)
     {
         return (new int128[](tokens.length), amounts);
     }
 
-    function velocore__gauge(
-        address user,
-        uint128 newEmissions,
-        Token[] calldata tokens,
-        int128[] memory amounts,
-        bytes calldata data
-    ) external returns (int128[] memory deltaGauge, int128[] memory deltaPool) {
+    function velocore__emission(uint256 a) external {}
+
+    function velocore__gauge(address user, Token[] calldata tokens, int128[] memory amounts, bytes calldata data)
+        external
+        returns (int128[] memory deltaGauge, int128[] memory deltaPool)
+    {
         return (amounts, new int128[](tokens.length));
     }
 }
 
-contract StubbornPool is IPool {
+contract StubbornPool {
     function velocore__execute(address user, Token[] calldata tokens, int128[] memory amounts, bytes calldata data)
         external
-        override
         returns (int128[] memory, int128[] memory)
     {
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -97,29 +97,11 @@ contract SwapFacetTest is Test {
         swap.execute(new Token[](0), new int128[](0), new VelocoreOperation[](0));
     }
 
-    function test_sorted() public {
-        Token[] memory tokens = new Token[](2);
-        tokens[0] = toToken(btc);
-        tokens[1] = toToken(usdc);
-        int128[] memory initial = new int128[](2);
-        VelocoreOperation[] memory ops = new VelocoreOperation[](0);
-        swap.execute(tokens, initial, ops);
-    }
-
-    function testFail_unsorted() public {
-        Token[] memory tokens = new Token[](2);
-        tokens[0] = toToken(usdc);
-        tokens[1] = toToken(btc);
-        int128[] memory initial = new int128[](2);
-        VelocoreOperation[] memory ops = new VelocoreOperation[](0);
-        swap.execute(tokens, initial, ops);
-    }
-
     function testFuzz_depositWithdraw(uint96 amount1, uint96 amount2) public {
         vm.assume(amount1 >= amount2);
 
         uint256 balanceBefore = btc.balanceOf(address(this));
-        uint256 poolBalanceBefore = swap.getPoolBalance(dumbPool, toToken(btc));
+        uint256 poolBalanceBefore = swap.getPoolBalance(IPool(address(dumbPool)), toToken(btc));
         Token[] memory tokens = new Token[](2);
         tokens[0] = toToken(btc);
         tokens[1] = toToken(usdc);
@@ -145,16 +127,16 @@ contract SwapFacetTest is Test {
         swap.execute(tokens, initial, ops);
 
         assertEq(btc.balanceOf(address(this)) - balanceBefore, 0);
-        assertEq(swap.getPoolBalance(dumbPool, toToken(btc)) - poolBalanceBefore, amount1);
+        assertEq(swap.getPoolBalance(IPool(address(dumbPool)), toToken(btc)) - poolBalanceBefore, amount1);
 
         initial[0] = 0;
 
-        tokenInfo[0] = bytes32(bytes2(0x0000)) | PoolBalanceLib.pack(0, -int256(uint256(amount2)));
+        tokenInfo[0] = bytes32(bytes2(0x0000)) | bytes32(uint256(uint128(int128(-int256(uint256(amount2))))));
 
         swap.execute(tokens, initial, ops);
 
         assertEq(btc.balanceOf(address(this)) - balanceBefore, amount2);
-        assertEq(swap.getPoolBalance(dumbPool, toToken(btc)) - poolBalanceBefore, amount1 - amount2);
+        assertEq(swap.getPoolBalance(IPool(address(dumbPool)), toToken(btc)) - poolBalanceBefore, amount1 - amount2);
     }
 
     function testFuzz_depositWithdrawMultiple(uint96 amount1, uint96 amount2) public {
@@ -175,7 +157,7 @@ contract SwapFacetTest is Test {
         VelocoreOperation[] memory ops = new VelocoreOperation[](1);
 
         bytes32[] memory tokenInfo = new bytes32[](1);
-        tokenInfo[0] = bytes32(bytes2(0x0000)) | PoolBalanceLib.pack(0, int256(0));
+        tokenInfo[0] = bytes32(bytes2(0x0000));
 
         ops[0] = VelocoreOperation({
             poolId: bytes32(bytes1(0x00)) | bytes32(uint256(uint160(address(dumbPool)))),
@@ -195,7 +177,7 @@ contract SwapFacetTest is Test {
         VelocoreOperation[] memory ops = new VelocoreOperation[](1);
 
         bytes32[] memory tokenInfo = new bytes32[](1);
-        tokenInfo[0] = bytes32(bytes2(0x0000)) | PoolBalanceLib.pack(0, -int256(uint256(1)));
+        tokenInfo[0] = bytes32(bytes2(0x0000)) | bytes32(uint256(12345));
 
         ops[0] = VelocoreOperation({
             poolId: bytes32(bytes1(0x00)) | bytes32(uint256(uint160(address(dumbPool)))),
@@ -215,7 +197,7 @@ contract SwapFacetTest is Test {
         VelocoreOperation[] memory ops = new VelocoreOperation[](1);
 
         bytes32[] memory tokenInfo = new bytes32[](1);
-        tokenInfo[0] = bytes32(bytes2(0x0000)) | PoolBalanceLib.pack(0, int256(uint256(1)));
+        tokenInfo[0] = bytes32(bytes2(0x0000)) | bytes32(uint256(1));
 
         ops[0] = VelocoreOperation({
             poolId: bytes32(bytes1(0x00)) | bytes32(uint256(uint160(address(stubbornPool)))),
@@ -230,7 +212,7 @@ contract SwapFacetTest is Test {
         vm.assume(amount1 >= amount2);
 
         uint256 balanceBefore = btc.balanceOf(address(this));
-        uint256 poolBalanceBefore = swap.getGaugeBalance(dumbPool, toToken(btc));
+        uint256 poolBalanceBefore = swap.getGaugeBalance(IPool(address(dumbPool)), toToken(btc));
         Token[] memory tokens = new Token[](2);
         tokens[0] = toToken(btc);
         tokens[1] = toToken(usdc);
@@ -256,22 +238,22 @@ contract SwapFacetTest is Test {
         swap.execute(tokens, initial, ops);
 
         assertEq(btc.balanceOf(address(this)) - balanceBefore, 0);
-        assertEq(swap.getGaugeBalance(dumbPool, toToken(btc)) - poolBalanceBefore, amount1);
+        assertEq(swap.getGaugeBalance(IPool(address(dumbPool)), toToken(btc)) - poolBalanceBefore, amount1);
 
         initial[0] = 0;
 
-        tokenInfo[0] = bytes32(bytes2(0x0000)) | PoolBalanceLib.pack(0, -int256(uint256(amount2)));
+        tokenInfo[0] = bytes32(bytes2(0x0000)) | bytes32(uint256(uint128(-int128(uint128(amount2)))));
 
         swap.execute(tokens, initial, ops);
 
         assertEq(btc.balanceOf(address(this)) - balanceBefore, amount2);
-        assertEq(swap.getGaugeBalance(dumbPool, toToken(btc)) - poolBalanceBefore, amount1 - amount2);
+        assertEq(swap.getGaugeBalance(IPool(address(dumbPool)), toToken(btc)) - poolBalanceBefore, amount1 - amount2);
     }
 
     function test_vote() public {
         uint256 amount1 = 100000;
         uint256 balanceBefore = btc.balanceOf(address(this));
-        uint256 poolBalanceBefore = swap.getGaugeBalance(dumbPool, toToken(btc));
+        uint256 poolBalanceBefore = swap.getGaugeBalance(IPool(address(dumbPool)), toToken(btc));
         Token[] memory tokens = new Token[](1);
         tokens[0] = toToken(ballot);
 
@@ -296,6 +278,62 @@ contract SwapFacetTest is Test {
         swap.execute(tokens, initial, ops);
         swap.execute(tokens, initial, ops);
         swap.execute(tokens, initial, ops);
+    }
+
+    function run3(
+        uint256 value,
+        IPool pool,
+        uint8 method,
+        Token t1,
+        uint8 m1,
+        int128 a1,
+        Token t2,
+        uint8 m2,
+        int128 a2,
+        Token t3,
+        uint8 m3,
+        int128 a3
+    ) internal {
+        Token[] memory tokens = new Token[](3);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = (t1);
+        tokens[1] = (t2);
+        tokens[2] = (t3);
+
+        ops[0].poolId = bytes32(bytes1(method)) | bytes32(uint256(uint160(address(pool))));
+        ops[0].tokenInformations = new bytes32[](3);
+        ops[0].data = "";
+
+        ops[0].tokenInformations[0] =
+            bytes32(bytes1(0x00)) | bytes32(bytes2(uint16(m1))) | bytes32(uint256(uint128(uint256(int256(a1)))));
+        ops[0].tokenInformations[1] =
+            bytes32(bytes1(0x01)) | bytes32(bytes2(uint16(m2))) | bytes32(uint256(uint128(uint256(int256(a2)))));
+        ops[0].tokenInformations[2] =
+            bytes32(bytes1(0x02)) | bytes32(bytes2(uint16(m3))) | bytes32(uint256(uint128(uint256(int256(a3)))));
+        swap.execute{value: value}(tokens, new int128[](3), ops);
+    }
+
+    function run2(uint256 value, IPool pool, uint8 method, Token t1, uint8 m1, int128 a1, Token t2, uint8 m2, int128 a2)
+        internal
+    {
+        Token[] memory tokens = new Token[](2);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = (t1);
+        tokens[1] = (t2);
+
+        ops[0].poolId = bytes32(bytes1(method)) | bytes32(uint256(uint160(address(pool))));
+        ops[0].tokenInformations = new bytes32[](2);
+        ops[0].data = "";
+
+        ops[0].tokenInformations[0] =
+            bytes32(bytes1(0x00)) | bytes32(bytes2(uint16(m1))) | bytes32(uint256(uint128(uint256(int256(a1)))));
+        ops[0].tokenInformations[1] =
+            bytes32(bytes1(0x01)) | bytes32(bytes2(uint16(m2))) | bytes32(uint256(uint128(uint256(int256(a2)))));
+        swap.execute{value: value}(tokens, new int128[](2), ops);
     }
 }
 
