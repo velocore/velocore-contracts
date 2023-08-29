@@ -6,7 +6,7 @@ import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
 import "../src/AdminFacet.sol";
 import "../src/SwapFacet.sol";
 import "../src/SwapAuxillaryFacet.sol";
-import "../src/pools/vc/VC.sol";
+import "../src/pools/vc/LVC.sol";
 import "../src/InspectorFacet.sol";
 import "src/pools/vc/VeVC.sol";
 import "src/pools/converter/WETHConverter.sol";
@@ -182,7 +182,7 @@ contract DeployScript is Script {
 
         Lens(address(lens)).upgrade(
             address(
-                new VelocoreLens(toToken(IERC20(0xA74f301f527e949bEC8F8c711646BF46fbCb08da)), vc, ConstantProductPoolFactory(address(cpf)), wombatRegistry)
+                new VelocoreLens(toToken(IERC20(0xA74f301f527e949bEC8F8c711646BF46fbCb08da)), vc, ConstantProductPoolFactory(address(cpf)), wombatRegistry, VelocoreLens(address(lens)))
             )
         );
         Placeholder(address(cpf)).upgradeTo(address(new ConstantProductPoolFactory(vault, cpl)));
@@ -192,7 +192,7 @@ contract DeployScript is Script {
         vault.admin_addFacet(new InspectorFacet());
 
         Placeholder(address(vc)).upgradeToAndCall(
-            address(new VC(address(vc), vault, toToken(IERC20(oldVC)), address(veVC))),
+            address(new LVC(address(vc), vault, toToken(IERC20(oldVC)), address(veVC))),
             abi.encodeWithSelector(VC.initialize.selector)
         );
 
@@ -200,8 +200,12 @@ contract DeployScript is Script {
             address(new VeVC(address(veVC), vault, IVotingEscrow(oldVeVC), vc)),
             abi.encodeWithSelector(VeVC.initialize.selector)
         );
+
+        vault.admin_setTreasury(0x1234561fEd41DD2D867a038bBdB857f291864225);
         weth.approve(address(vault), type(uint256).max);
         cpf.setFee(0.01e9);
+        cpf.setDecay(4294955811);
+
         cpf.deploy(NATIVE_TOKEN, toToken(IERC20(0xA74f301f527e949bEC8F8c711646BF46fbCb08da)));
         cpf.deploy(NATIVE_TOKEN, toToken(IERC20(0xFfE9fd6a97DEF0e0611993A1ac5cE8E9C70685de)));
         cpf.deploy(NATIVE_TOKEN, toToken(IERC20(0xdF7142eFE69ae90831911D6Ae6A043e80a87DB61)));
@@ -386,22 +390,20 @@ contract DeployScript is Script {
         vault.execute{value: value}(tokens, new int128[](3), ops);
     }
 
-    function migrateVC(int128 amount) public {
-        Token[] memory tokens = new Token[](2);
+    function migrateVC(int128) public {
+        Token[] memory tokens = new Token[](1);
 
         VelocoreOperation[] memory ops = new VelocoreOperation[](1);
 
         tokens[0] = toToken(vc);
-        tokens[1] = toToken(oldVC);
 
         ops[0].poolId = bytes32(uint256(uint160(address(vc))));
         ops[0].tokenInformations = new bytes32[](tokens.length);
         ops[0].data = "";
 
-        ops[0].tokenInformations[0] = bytes32(bytes2(0x0000) | bytes32(uint256(uint128(uint256(int256(-amount))))));
-        ops[0].tokenInformations[1] = bytes32(bytes2(0x0100) | bytes32(uint256(uint128(uint256(int256(amount))))));
+        ops[0].tokenInformations[0] = bytes32(bytes2(0x0001));
 
-        vault.execute(tokens, new int128[](2), ops);
+        vault.execute(tokens, new int128[](1), ops);
     }
 
     function lockVC(int128 amount) public {

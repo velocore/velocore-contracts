@@ -26,15 +26,9 @@ contract UpgradeScript is Script {
 
     function run() public returns (IVault, VC, VeVC) {
         uint256 deployerPrivateKey = vm.envUint("VELOCORE_DEPLOYER");
-        ConstantProductPool[] memory pools =
-            ConstantProductPoolFactory(0xBe6c6A389b82306e88d74d1692B67285A9db9A47).getPools(0, 1000);
-
         vm.startBroadcast(deployerPrivateKey);
-
-        WombatPool(0x61cb3a0C59825464474Ebb287A3e7D2b9b59D093).setFee(0.0001e18);
-        WombatPool(0x131D56758351C9885862ADA09A6a7071735C83b3).setFee(0.0001e18);
-        WombatPool(0x1D312eedd57E8d43bcb6369E4b8f02d3C18AAf13).setFee(0.0001e18);
-        // add voterfactory
+        LinearBribeFactory lbf = LinearBribeFactory(0x6ECc3DDf76E42DD2ff681dC926Eb885D8651Ee54);
+        lbf.setFeeAmount(10000e18);
         vm.stopBroadcast();
     }
 

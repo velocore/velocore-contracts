@@ -284,10 +284,14 @@ contract SwapFacet is VaultStorage, IFacet {
                 int128 deltaVote;
                 if (ballotIndex != type(uint256).max) {
                     deltaVote = opAmounts.u(ballotIndex);
-                    gauge.totalVotes = (int256(uint256(gauge.totalVotes)) + deltaVote).toUint256().toUint112();
-                    _e().totalVotes = (int256(uint256(_e().totalVotes)) + deltaVote).toUint256().toUint128();
-                    gauge.userVotes[user] = (int256(uint256(gauge.userVotes[user])) + deltaVote).toUint256().toUint128();
-                    cumDelta[_binarySearchM(tokenRef, ballot)] -= deltaVote;
+                    if (deltaVote != type(int128).max) {
+                        gauge.totalVotes = (int256(uint256(gauge.totalVotes)) + deltaVote).toUint256().toUint112();
+                        _e().totalVotes = (int256(uint256(_e().totalVotes)) + deltaVote).toUint256().toUint128();
+                        gauge.userVotes[user] = (int256(uint256(gauge.userVotes[user])) + deltaVote).toUint256().toUint128();
+                        cumDelta[_binarySearchM(tokenRef, ballot)] -= deltaVote;
+                    } else {
+                        deltaVote = 0;
+                    }
                 }
                 emit Vote(IGauge(opDst), user, deltaVote);
             } else if (opType == 4) {

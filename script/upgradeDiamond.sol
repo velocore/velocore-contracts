@@ -6,7 +6,7 @@ import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
 import "../src/AdminFacet.sol";
 import "../src/SwapFacet.sol";
 import "../src/SwapAuxillaryFacet.sol";
-import "../src/pools/vc/VC.sol";
+import "../src/pools/vc/LVC.sol";
 import "src/pools/vc/VeVC.sol";
 import "src/pools/linear-bribe/LinearBribeFactory.sol";
 import "src/pools/converter/WETHConverter.sol";
@@ -30,18 +30,43 @@ contract UpgradeScript is Script {
         uint256 deployerPrivateKey = vm.envUint("VELOCORE_DEPLOYER");
         vm.startBroadcast(deployerPrivateKey);
 
+        /*
         AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_addFacet(
             new AdminFacet(IAuthorizer(0x0978112d4Ea277aD7fbf9F89268DEEdDeB743996), address(0))
         );
+        */
         AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_addFacet(
             new SwapFacet(VC(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1), toToken(IERC20(0xAeC06345b26451bdA999d83b361BEaaD6eA93F87)))
         );
+        /*
         AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_addFacet(
             new SwapAuxillaryFacet(VC(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1), toToken(IERC20(0xAeC06345b26451bdA999d83b361BEaaD6eA93F87)))
         );
         AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_addFacet(new NFTHolderFacet());
         AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_addFacet(new InspectorFacet());
-        // add voterfactory
+        AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_setTreasury(
+            0x1234561fEd41DD2D867a038bBdB857f291864225
+        );
+        LVC(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1).upgradeTo(
+            address(
+                new LVC(address(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1), IVault(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535), toToken(IERC20(address(0))), address(0xAeC06345b26451bdA999d83b361BEaaD6eA93F87))
+            )
+        );
+
+        Token[] memory tokens = new Token[](1);
+
+        VelocoreOperation[] memory ops = new VelocoreOperation[](1);
+
+        tokens[0] = toToken(LVC(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1));
+
+        ops[0].poolId = bytes32(uint256(uint160(address(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1))));
+        ops[0].tokenInformations = new bytes32[](tokens.length);
+        ops[0].data = "";
+
+        ops[0].tokenInformations[0] = bytes32(bytes2(0x0001));
+
+        IVault(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).execute(tokens, new int128[](1), ops);
+        */
         vm.stopBroadcast();
     }
 

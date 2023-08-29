@@ -59,6 +59,7 @@ contract VelocoreLens is VaultStorage {
     ConstantProductPoolFactory immutable factory;
     WombatRegistry immutable wombatRegistry;
     Token immutable usdc;
+    VelocoreLens immutable lens;
 
     using PoolBalanceLib for bytes32;
 
@@ -107,8 +108,8 @@ contract VelocoreLens is VaultStorage {
                         continue;
                     }
 
-                    if (wombatTokens[j] == quote) {
-                        return spotPrice(wombats[i], base, wombatTokens[j], amount);
+                    if (wombatTokens[j] == usdc) {
+                        return spotPrice(usdc, quote, spotPrice(wombats[i], base, usdc, amount));
                     }
                 }
             }
@@ -169,11 +170,18 @@ contract VelocoreLens is VaultStorage {
         }
     }
 
-    constructor(Token usdc_, VC vc_, ConstantProductPoolFactory factory_, WombatRegistry wombatRegistry_) {
+    constructor(
+        Token usdc_,
+        VC vc_,
+        ConstantProductPoolFactory factory_,
+        WombatRegistry wombatRegistry_,
+        VelocoreLens lens_
+    ) {
         usdc = usdc_;
         vc = vc_;
         factory = factory_;
         wombatRegistry = wombatRegistry_;
+        lens = lens_;
     }
 
     function wombatGauges(address user) external returns (GaugeData[] memory gaugeDataArray) {
@@ -245,7 +253,8 @@ contract VelocoreLens is VaultStorage {
         gaugeData.userStakedAmounts = IGauge(gauge).stakedTokens(user);
         for (uint256 i = 0; i < gaugeData.stakeableTokens.length; i++) {
             if (gaugeData.stakedAmounts[i] > 0) {
-                uint256 spot = spotPrice(gaugeData.stakeableTokens[i], NATIVE_TOKEN, gaugeData.stakedAmounts[i] / 1000);
+                uint256 spot =
+                    lens.spotPrice(gaugeData.stakeableTokens[i], NATIVE_TOKEN, gaugeData.stakedAmounts[i] / 1000);
                 gaugeData.stakedValueInHubToken += spot * 1000;
                 gaugeData.userStakedValueInHubToken +=
                     spot * gaugeData.userStakedAmounts[i] * 1000 / gaugeData.stakedAmounts[i];
@@ -253,12 +262,12 @@ contract VelocoreLens is VaultStorage {
         }
 
         if (gaugeData.userStakedValueInHubToken > 0 && gaugeData.userEmissionRate > 0) {
-            gaugeData.userInterestRatePerSecond = spotPrice(toToken(vc), NATIVE_TOKEN, gaugeData.userEmissionRate)
+            gaugeData.userInterestRatePerSecond = lens.spotPrice(toToken(vc), NATIVE_TOKEN, gaugeData.userEmissionRate)
                 * 1e18 / gaugeData.userStakedValueInHubToken;
         }
         if (gaugeData.stakedValueInHubToken > 0 && gaugeData.emissionRate > 0) {
-            gaugeData.averageInterestRatePerSecond =
-                spotPrice(toToken(vc), NATIVE_TOKEN, gaugeData.emissionRate) * 1e18 / gaugeData.stakedValueInHubToken;
+            gaugeData.averageInterestRatePerSecond = lens.spotPrice(toToken(vc), NATIVE_TOKEN, gaugeData.emissionRate)
+                * 1e18 / gaugeData.stakedValueInHubToken;
         }
 
         uint256 len = 0;
@@ -328,7 +337,6 @@ contract VelocoreLens is VaultStorage {
         Token[] memory tokens = new Token[](gaugeData.underlyingTokens.length + gaugeData.stakeableTokens.length);
 
         VelocoreOperation[] memory ops = new VelocoreOperation[](1);
-        ConstantProductPool(pool).setFeeToZero();
         ops[0].poolId = bytes32(bytes1(0x00)) | bytes32(uint256(uint160(pool)));
         ops[0].tokenInformations = new bytes32[](tokens.length);
         ops[0].data = "";
@@ -359,8 +367,6 @@ contract VelocoreLens is VaultStorage {
 
     function _fillStakedUnderlyingAmounts(address pool, GaugeData memory gaugeData) internal {
         Token[] memory tokens = new Token[](gaugeData.underlyingTokens.length + gaugeData.stakeableTokens.length);
-
-        ConstantProductPool(pool).setFeeToZero();
         VelocoreOperation[] memory ops = new VelocoreOperation[](1);
 
         ops[0].poolId = bytes32(bytes1(0x00)) | bytes32(uint256(uint160(pool)));

@@ -8,9 +8,6 @@ import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import "../SatelliteUpgradeable.sol";
 
-uint256 constant DECAY = 999999983382381333; // (0.99)^(1/(seconds in a week)) * 1e18
-uint256 constant START = 1692874800;
-uint256 constant INITIAL_SUPPLY = 100_000_000e18;
 /**
  * @dev The emission token of Velocore.
  *
@@ -21,6 +18,10 @@ uint256 constant INITIAL_SUPPLY = 100_000_000e18;
  */
 
 contract LVC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
+    uint256 constant DECAY = 999999983382381333; // (0.99)^(1/(seconds in a week)) * 1e18
+    uint256 constant START = 1692874800;
+    uint256 constant INITIAL_SUPPLY = 100_000_000e18;
+
     event Migrated(address indexed user, uint256 amount);
 
     using TokenLib for Token;
@@ -97,7 +98,7 @@ contract LVC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
     function emissionRate() external view override returns (uint256) {
         if (_totalSupply >= 200_000_000 * 1e18) return 0.16534391534e18;
         if (block.timestamp < START) return 0;
-        uint256 a = ((300_000_0001e18 - _totalSupply) * rpow(DECAY, block.timestamp - lastEmission, 1e18)) / 1e18;
+        uint256 a = ((300_000_000e18 - _totalSupply) * rpow(DECAY, block.timestamp - lastEmission, 1e18)) / 1e18;
 
         return a - ((a * DECAY) / 1e18);
     }
@@ -111,8 +112,8 @@ contract LVC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
         require(tokens.length == 1 && tokens[0] == toToken(this));
 
         initialMint = true;
-
         r[0] = -INITIAL_SUPPLY.toInt256().toInt128();
+        _totalSupply += uint128(INITIAL_SUPPLY);
         return (new int128[](1), r);
     }
 

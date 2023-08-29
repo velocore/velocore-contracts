@@ -159,7 +159,9 @@ contract DeployScript is Script {
         lens = VelocoreLens(address(new Lens(vault)));
 
         Lens(address(lens)).upgrade(
-            address(new VelocoreLens(NATIVE_TOKEN, vc, ConstantProductPoolFactory(address(cpf)), reg))
+            address(
+                new VelocoreLens(NATIVE_TOKEN, vc, ConstantProductPoolFactory(address(cpf)), reg, VelocoreLens(address(lens)))
+            )
         );
 
         vault.admin_addFacet(new SwapFacet(vc, toToken(veVC)));

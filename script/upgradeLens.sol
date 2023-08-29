@@ -29,11 +29,13 @@ contract UpgradeScript is Script {
         vm.startBroadcast(deployerPrivateKey);
         Lens(0xaA18cDb16a4DD88a59f4c2f45b5c91d009549e06).upgrade(
             address(
-                new VelocoreLens(toToken(IERC20(0xA74f301f527e949bEC8F8c711646BF46fbCb08da)), VC(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1), ConstantProductPoolFactory(0xBe6c6A389b82306e88d74d1692B67285A9db9A47), WombatRegistry(0x111A6d7f5dDb85776F1b6A6DEAbe552815559f9E))
+                new VelocoreLens(toToken(IERC20(0x176211869cA2b568f2A7D4EE941E073a821EE1ff)), VC(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1), ConstantProductPoolFactory(0xBe6c6A389b82306e88d74d1692B67285A9db9A47), WombatRegistry(0x111A6d7f5dDb85776F1b6A6DEAbe552815559f9E), VelocoreLens(0xaA18cDb16a4DD88a59f4c2f45b5c91d009549e06))
             )
         );
         // add voterfactory
         vm.stopBroadcast();
+
+        VelocoreLens(0xaA18cDb16a4DD88a59f4c2f45b5c91d009549e06).canonicalPools(address(this), 0, 1000);
     }
 
     function grant(address factory, bytes4 selector, address who) internal {

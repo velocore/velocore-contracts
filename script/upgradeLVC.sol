@@ -5,7 +5,8 @@ import "forge-std/Script.sol";
 import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
 import "../src/AdminFacet.sol";
 import "../src/SwapFacet.sol";
-import "../src/pools/vc/VC.sol";
+import "../src/SwapAuxillaryFacet.sol";
+import "../src/pools/vc/LVC.sol";
 import "src/pools/vc/VeVC.sol";
 import "src/pools/linear-bribe/LinearBribeFactory.sol";
 import "src/pools/converter/WETHConverter.sol";
@@ -13,6 +14,7 @@ import "src/pools/wombat/WombatPool.sol";
 import "src/MockERC20.sol";
 import "src/lens/Lens.sol";
 import "src/NFTHolderFacet.sol";
+import "src/InspectorFacet.sol";
 import "src/lens/VelocoreLens.sol";
 import "src/pools/constant-product/ConstantProductPoolFactory.sol";
 import "src/pools/constant-product/ConstantProductLibrary.sol";
@@ -26,15 +28,14 @@ contract UpgradeScript is Script {
 
     function run() public returns (IVault, VC, VeVC) {
         uint256 deployerPrivateKey = vm.envUint("VELOCORE_DEPLOYER");
-        ConstantProductPool[] memory pools =
-            ConstantProductPoolFactory(0xBe6c6A389b82306e88d74d1692B67285A9db9A47).getPools(0, 1000);
-
         vm.startBroadcast(deployerPrivateKey);
 
-        WombatPool(0x61cb3a0C59825464474Ebb287A3e7D2b9b59D093).setFee(0.0001e18);
-        WombatPool(0x131D56758351C9885862ADA09A6a7071735C83b3).setFee(0.0001e18);
-        WombatPool(0x1D312eedd57E8d43bcb6369E4b8f02d3C18AAf13).setFee(0.0001e18);
-        // add voterfactory
+        LVC(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1).upgradeTo(
+            address(
+                new LVC(address(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1), IVault(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535), toToken(IERC20(address(0))), address(0xAeC06345b26451bdA999d83b361BEaaD6eA93F87))
+            )
+        );
+
         vm.stopBroadcast();
     }
 

@@ -87,6 +87,7 @@ contract AdminFacet is VaultStorage, IFacet {
         _setFunction(AdminFacet.admin_addFacet.selector, thisImplementation);
         _setFunction(AdminFacet.admin_setAuthorizer.selector, thisImplementation);
         _setFunction(AdminFacet.admin_pause.selector, thisImplementation);
+        _setFunction(AdminFacet.admin_setTreasury.selector, thisImplementation);
     }
 
     function admin_setFunctions(address implementation, bytes4[] calldata sigs) external authenticate {

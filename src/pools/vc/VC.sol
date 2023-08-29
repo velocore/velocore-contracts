@@ -7,8 +7,6 @@ import "src/interfaces/IVC.sol";
 import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "../SatelliteUpgradeable.sol";
 
-uint256 constant DECAY = 999999983382381333; // (0.99)^(1/(seconds in a week)) * 1e18
-
 /**
  * @dev The emission token of Velocore.
  *
@@ -18,6 +16,8 @@ uint256 constant DECAY = 999999983382381333; // (0.99)^(1/(seconds in a week)) *
  *
  */
 contract VC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
+    uint256 constant DECAY = 999999983382381333; // (0.99)^(1/(seconds in a week)) * 1e18
+
     event Migrated(address indexed user, uint256 amount);
 
     using TokenLib for Token;
