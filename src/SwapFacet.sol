@@ -69,6 +69,7 @@ contract SwapFacet is VaultStorage, IFacet {
         external
         payable
         nonReentrant
+        returns (int128[] memory)
     {
         uint256 tokenRefLength = tokenRef.length;
         require(tokenRefLength == deposit.length && tokenRefLength < 256, "malformed array");
@@ -77,7 +78,7 @@ contract SwapFacet is VaultStorage, IFacet {
          * to gurantee uniqueness and binary-searchability, tokenRef and VelocoreOperation.tokenInformation must be sorted first.
          * We perform insertion sort to allow sorting off-chain to save gas.
          */
-        _sort(tokenRef, deposit, ops);
+        (bool orderChanged,, uint256[] memory toNewIdx) = _sort(tokenRef, deposit, ops);
 
         /**
          * transfer (deposit[]) amount of tokens from the user and credit them.
@@ -125,6 +126,15 @@ contract SwapFacet is VaultStorage, IFacet {
                     tokenRef.u(i).safeTransferFrom(msg.sender, address(this), uint256(int256(-d)));
                 }
             }
+        }
+        if (orderChanged) {
+            int128[] memory ret = new int128[](tokenRef.length);
+            for (uint256 i = 0; i < ret.length; i++) {
+                ret[i] = deposit[toNewIdx[i]];
+            }
+            return ret;
+        } else {
+            return deposit;
         }
     }
 
@@ -287,7 +297,8 @@ contract SwapFacet is VaultStorage, IFacet {
                     if (deltaVote != type(int128).max) {
                         gauge.totalVotes = (int256(uint256(gauge.totalVotes)) + deltaVote).toUint256().toUint112();
                         _e().totalVotes = (int256(uint256(_e().totalVotes)) + deltaVote).toUint256().toUint128();
-                        gauge.userVotes[user] = (int256(uint256(gauge.userVotes[user])) + deltaVote).toUint256().toUint128();
+                        gauge.userVotes[user] =
+                            (int256(uint256(gauge.userVotes[user])) + deltaVote).toUint256().toUint128();
                         cumDelta[_binarySearchM(tokenRef, ballot)] -= deltaVote;
                     } else {
                         deltaVote = 0;
@@ -340,7 +351,7 @@ contract SwapFacet is VaultStorage, IFacet {
         IGauge gauge,
         uint256 elapsed,
         address user
-    ) external {
+    ) external payable {
         IBribe briber = IBribe(_e().gauges[gauge].bribes.at(bribeIndex));
         (
             Token[] memory bribeTokens,

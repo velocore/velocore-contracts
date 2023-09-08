@@ -56,18 +56,25 @@ contract Airdrop is LinearVesting {
     bytes32 public constant root = 0x14525031c4dec8bf83d547eb3503072d167592cd447414e4025ffbd37412ed32;
     VelocoreGirls public immutable girls;
 
+    VelocoreGirls2 public immutable girls2;
+
     uint256 constant REWARD_PER_TIER = 250_000e18;
-    uint256 constant REWARD_1 = REWARD_PER_TIER / 12818;
-    uint256 constant REWARD_2 = REWARD_PER_TIER / 3385;
-    uint256 constant REWARD_3 = REWARD_PER_TIER / 100;
-    uint256 constant REWARD_4 = REWARD_PER_TIER / 100;
+    uint256 public constant REWARD_1 = REWARD_PER_TIER / 12818;
+    uint256 public constant REWARD_2 = REWARD_PER_TIER / 3385;
+    uint256 public constant REWARD_3 = REWARD_PER_TIER / 100;
+    uint256 public constant REWARD_4 = REWARD_PER_TIER / 100;
 
     event ClaimNFT(address addr, uint256 a1, uint256 a2, uint256 a3, uint256 a4);
 
-    constructor(VelocoreGirls girls_, IERC20 rewardToken_, uint256 vestBeginning_, uint256 vestDuration_)
-        LinearVesting(rewardToken_, vestBeginning_, vestDuration_)
-    {
+    constructor(
+        VelocoreGirls girls_,
+        VelocoreGirls2 girls2_,
+        IERC20 rewardToken_,
+        uint256 vestBeginning_,
+        uint256 vestDuration_
+    ) LinearVesting(rewardToken_, vestBeginning_, vestDuration_) {
         girls = girls_;
+        girls2 = girls2_;
     }
 
     function claimNFT(bytes32[] memory proof, bool p1, bool p2, bool p3, bool p4, uint256 airdrop, uint256 premining)
@@ -89,15 +96,15 @@ contract Airdrop is LinearVesting {
             total += REWARD_2;
         }
         if (p3) {
-            girls.mint(msg.sender, 9, 1);
+            girls2.mint(msg.sender, 9, 1);
             total += REWARD_3;
         }
         if (p4) {
-            girls.mint(msg.sender, 10, 1);
+            girls2.mint(msg.sender, 10, 1);
             total += REWARD_4;
         }
 
-        _grantVestedReward(msg.sender, total);
+        _grantVestedReward(msg.sender, total * 0.465556e18 / 1e18);
     }
 }
 
@@ -125,6 +132,6 @@ contract Airdrop2 is LinearVesting {
         bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(msg.sender, p1, p2, p3, p4, airdrop, premining))));
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
-        _grantVestedReward(msg.sender, total);
+        _grantVestedReward(msg.sender, total * 0.465556e18 / 1e18);
     }
 }

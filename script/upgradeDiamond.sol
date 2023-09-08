@@ -14,6 +14,7 @@ import "src/pools/wombat/WombatPool.sol";
 import "src/MockERC20.sol";
 import "src/lens/Lens.sol";
 import "src/NFTHolderFacet.sol";
+import "src/SwapHelperFacet.sol";
 import "src/InspectorFacet.sol";
 import "src/lens/VelocoreLens.sol";
 import "src/pools/constant-product/ConstantProductPoolFactory.sol";
@@ -37,6 +38,9 @@ contract UpgradeScript is Script {
         */
         AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_addFacet(
             new SwapFacet(VC(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1), toToken(IERC20(0xAeC06345b26451bdA999d83b361BEaaD6eA93F87)))
+        );
+        AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_addFacet(
+            new SwapHelperFacet(ConstantProductPoolFactory(0xBe6c6A389b82306e88d74d1692B67285A9db9A47))
         );
         /*
         AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_addFacet(

@@ -14,6 +14,7 @@ import "src/MockERC20.sol";
 import "src/lens/Lens.sol";
 import "src/NFTHolderFacet.sol";
 import "src/InspectorFacet.sol";
+import "src/SwapHelperFacet.sol";
 import "src/lens/VelocoreLens.sol";
 import "src/pools/constant-product/ConstantProductPoolFactory.sol";
 import "src/pools/constant-product/ConstantProductLibrary.sol";
@@ -168,6 +169,7 @@ contract DeployScript is Script {
         vault.admin_addFacet(new SwapAuxillaryFacet(vc, toToken(veVC)));
         vault.admin_addFacet(new NFTHolderFacet());
         vault.admin_addFacet(new InspectorFacet());
+        vault.admin_addFacet(new SwapHelperFacet(cpf));
 
         Placeholder(address(vc)).upgradeToAndCall(
             address(new VC(address(vc), vault, toToken(IERC20(oldVC)), address(veVC))),
@@ -184,7 +186,42 @@ contract DeployScript is Script {
 
         cpf.deploy(NATIVE_TOKEN, toToken(vc));
         cpf.deploy(toToken(veVC), toToken(vc));
+        vault.execute3{value: 1e18}(
+            vault.getPair(address(0), address(vc)),
+            0,
+            address(vc),
+            0,
+            1000e18,
+            address(0),
+            0,
+            1e18,
+            vault.getPair(address(0), address(vc)),
+            1,
+            0,
+            ""
+        );
+        vault.execute3{value: 1e18}(
+            vault.getPair(address(veVC), address(vc)),
+            0,
+            address(vc),
+            0,
+            1000e18,
+            address(veVC),
+            0,
+            1000e18,
+            vault.getPair(address(veVC), address(vc)),
+            1,
+            0,
+            ""
+        );
+        address[] memory path = new address[](3);
+        path[0] = address(0);
+        path[1] = address(vc);
+        path[2] = address(veVC);
 
+        SwapHelperFacet(address(vault)).swapExactETHForTokens{value: 1e18}(
+            1e18, path, 0x1234561fEd41DD2D867a038bBdB857f291864225, block.timestamp * 2
+        );
         vm.stopBroadcast();
 
         console.log("authorizer: %s", address(auth));

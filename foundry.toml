@@ -5,7 +5,7 @@ libs = ["lib"]
 solc-version = "0.8.19"
 via_ir = true
 optimizer = true
-optimizer-runs = 1000
+optimizer-runs = 50
 
 [rpc_endpoints]
 telos-testnet = "https://testnet.telos.net/evm"
@@ -18,3 +18,4 @@ zksync = "https://mainnet.era.zksync.io"
 metachain-changi = "http://35.187.53.161:20551/"
 scroll-sepolia = "https://sepolia-rpc.scroll.io/"
 ethereum = "https://eth.llamarpc.com"
+nova = "https://arbitrum-nova.blockpi.network/v1/rpc/public"

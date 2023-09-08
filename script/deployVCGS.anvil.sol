@@ -56,6 +56,34 @@ contract Deployer {
     }
 }
 
+contract Airdrop3 is LinearVesting {
+    using SafeERC20 for IERC20;
+
+    bytes32 public constant root = 0xf70d938c09046ac1a8cb87317b5150481176d84c30d74cb6c16b69202b52766d;
+    VelocoreGirls public immutable girls;
+
+    event ClaimNFT(address addr, uint256 a1, uint256 a2, uint256 a3, uint256 a4);
+
+    constructor(VelocoreGirls girls_, IERC20 rewardToken_, uint256 vestBeginning_, uint256 vestDuration_)
+        LinearVesting(rewardToken_, vestBeginning_, vestDuration_)
+    {
+        girls = girls_;
+    }
+
+    function claimNFT(bytes32[] memory proof, bool p1, bool p2, bool p3, bool p4, uint256 airdrop, uint256 premining)
+        public
+    {
+        require(!registered[msg.sender], "Already claimed");
+
+        uint256 total = airdrop;
+
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(msg.sender, p1, p2, p3, p4, airdrop, premining))));
+        require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
+
+        _grantVestedReward(msg.sender, total * 0.465556e18 / 1e18);
+    }
+}
+
 contract UpgradeScript is Script {
     function setUp() public {}
 
@@ -63,29 +91,11 @@ contract UpgradeScript is Script {
         uint256 deployerPrivateKey = vm.envUint("VELOCORE_DEPLOYER");
         vm.startBroadcast(deployerPrivateKey);
 
-        VelocoreGirls vcgs = VelocoreGirls(placeholder());
+        Airdrop3 airdrop2 =
+        new Airdrop3(VelocoreGirls(address(0)), IERC20(0xCE62Ce405e264E85D547d891845Aa975FECa2590), block.timestamp, 5184000);
 
-        VelocoreGirls2 vcgs2 = VelocoreGirls2(placeholder());
+        IERC20(0xCE62Ce405e264E85D547d891845Aa975FECa2590).transfer(address(airdrop2), 1_000_000e18);
 
-        Placeholder(address(vcgs)).upgradeToAndCall(
-            address(new VelocoreGirls(IVault(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535), address(vcgs))),
-            abi.encodeWithSelector(VelocoreGirls.initialize.selector)
-        );
-
-        Placeholder(address(vcgs2)).upgradeToAndCall(
-            address(new VelocoreGirls2(IVault(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535), address(vcgs))),
-            abi.encodeWithSelector(VelocoreGirls.initialize.selector)
-        );
-
-        Airdrop airdrop =
-            new Airdrop(vcgs, vcgs2, IERC20(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1), 1693566000, 5184000);
-        Airdrop2 airdrop2 = new Airdrop2(vcgs, IERC20(0xAeC06345b26451bdA999d83b361BEaaD6eA93F87), 1693566000, 5184000);
-        vcgs.addMinter(address(airdrop));
-        vcgs2.addMinter(address(airdrop));
-
-        console.log(address(vcgs));
-        console.log(address(vcgs2));
-        console.log(address(airdrop));
         console.log(address(airdrop2));
         vm.stopBroadcast();
     }
@@ -97,9 +107,7 @@ contract UpgradeScript is Script {
     }
 
     function placeholder() internal returns (address) {
-        Deployer deployer = Deployer(0x61d8b49FA46F747c4512474749dddC1902d6eA9D);
-        return deployer.deployAndCall(
-            vm.getCode("DumbProxy.yul:DumbProxy"), abi.encode(address(0x3DC531557935fF04F1756ba46319BE90745e52A6))
-        );
+        Deployer deployer = new Deployer();
+        return deployer.deployAndCall(vm.getCode("DumbProxy.yul:DumbProxy"), abi.encode(address(new Placeholder())));
     }
 }

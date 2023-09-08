@@ -54,6 +54,11 @@ contract Voter is Satellite {
         emit Owner(newOwner);
     }
 
+    function sudo_changeOwner(address newOwner) external authenticate {
+        owner = newOwner;
+        emit Owner(newOwner);
+    }
+
     function withdrawTokens(Token[] memory tokens) external authenticate {
         for (uint256 i = 0; i < tokens.length; i++) {
             tokens[i].transferFrom(address(this), msg.sender, tokens[i].balanceOf(address(this)));

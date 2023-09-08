@@ -78,11 +78,114 @@ interface IVault {
 
     function admin_pause(bool t) external;
     function admin_setTreasury(address treasury) external;
-    function inspect(address lens, bytes memory data) external;
 
-    function factory() external view returns (address);
-    function lens() external view returns (address);
-    function wombatRegistry() external view returns (address);
-    
-    
+    function swapExactTokensForTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+    function swapTokensForExactTokens(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+    function swapExactETHForTokens(uint256 amountOutMin, address[] calldata path, address to, uint256 deadline)
+        external
+        payable
+        returns (uint256[] memory amounts);
+    function swapTokensForExactETH(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+    function swapExactTokensForETH(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+    function swapETHForExactTokens(uint256 amountOut, address[] calldata path, address to, uint256 deadline)
+        external
+        payable
+        returns (uint256[] memory amounts);
+
+    function getAmountsOut(uint256 amountIn, address[] calldata path) external returns (uint256[] memory amounts);
+    function getAmountsIn(uint256 amountOut, address[] calldata path) external returns (uint256[] memory amounts);
+
+    function execute1(address pool, uint8 method, address t1, uint8 m1, int128 a1, bytes memory data)
+        external
+        payable
+        returns (int128[] memory);
+
+    function query1(address pool, uint8 method, address t1, uint8 m1, int128 a1, bytes memory data)
+        external
+        returns (int128[] memory);
+
+    function execute2(
+        address pool,
+        uint8 method,
+        address t1,
+        uint8 m1,
+        int128 a1,
+        address t2,
+        uint8 m2,
+        int128 a2,
+        bytes memory data
+    ) external payable returns (int128[] memory);
+
+    function query2(
+        address pool,
+        uint8 method,
+        address t1,
+        uint8 m1,
+        int128 a1,
+        address t2,
+        uint8 m2,
+        int128 a2,
+        bytes memory data
+    ) external returns (int128[] memory);
+
+    function execute3(
+        address pool,
+        uint8 method,
+        address t1,
+        uint8 m1,
+        int128 a1,
+        address t2,
+        uint8 m2,
+        int128 a2,
+        address t3,
+        uint8 m3,
+        int128 a3,
+        bytes memory data
+    ) external payable returns (int128[] memory);
+
+    function query3(
+        address pool,
+        uint8 method,
+        address t1,
+        uint8 m1,
+        int128 a1,
+        address t2,
+        uint8 m2,
+        int128 a2,
+        address t3,
+        uint8 m3,
+        int128 a3,
+        bytes memory data
+    ) external returns (int128[] memory);
+
+
+    function getPair(address t0, address t1) external view returns (address);
+
+    function allPairs(uint256 i) external view returns (address);
+
+    function allPairsLength() external view returns (uint256);
 }
