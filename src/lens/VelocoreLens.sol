@@ -220,22 +220,6 @@ contract VelocoreLens is VaultStorage {
         _queryGauge(gauge, user, poolData);
     }
 
-    function _queryPool(address pool, PoolData memory poolData) internal {
-        poolData.pool = pool;
-        poolData.poolType = ISwap(poolData.pool).swapType();
-        poolData.listedTokens = ISwap(poolData.pool).listedTokens();
-        poolData.reserves = new uint256[](poolData.listedTokens.length);
-        for (uint256 i = 0; i < poolData.listedTokens.length; i++) {
-            poolData.reserves[i] = _poolBalances()[IPool(pool)][poolData.listedTokens[i]].poolHalf();
-        }
-        poolData.lpTokens = ISwap(pool).lpTokens();
-        poolData.mintedLPTokens = new uint256[](poolData.lpTokens.length);
-        for (uint256 i = 0; i < poolData.mintedLPTokens.length; i++) {
-            poolData.mintedLPTokens[i] = poolData.lpTokens[i].totalSupply();
-        }
-        poolData.poolParams = IPool(pool).poolParams();
-    }
-
     function _queryGauge(address gauge, address user, GaugeData memory gaugeData) internal {
         GaugeInformation storage g = _e().gauges[IGauge(gauge)];
         _queryPool(IGauge(gauge).stakeableTokens()[0].addr(), gaugeData.poolData);
@@ -414,5 +398,34 @@ contract VelocoreLens is VaultStorage {
         } catch {
             return 0;
         }
+    }
+
+    function getPoolBalance(IPool poolAddr, Token token) external view returns (uint256) {
+        return _poolBalances()[poolAddr][token].poolHalf();
+    }
+
+    function _queryPool(address pool, PoolData memory poolData) internal {
+        poolData.pool = pool;
+        poolData.poolType = ISwap(poolData.pool).swapType();
+        poolData.listedTokens = ISwap(poolData.pool).listedTokens();
+        poolData.reserves = new uint256[](poolData.listedTokens.length);
+        for (uint256 i = 0; i < poolData.listedTokens.length; i++) {
+            poolData.reserves[i] = _poolBalances()[IPool(pool)][poolData.listedTokens[i]].poolHalf();
+        }
+        poolData.lpTokens = ISwap(pool).lpTokens();
+        poolData.mintedLPTokens = new uint256[](poolData.lpTokens.length);
+        for (uint256 i = 0; i < poolData.mintedLPTokens.length; i++) {
+            if (poolData.lpTokens[i].spec() == TokenSpec.ERC1155) {
+                poolData.mintedLPTokens[i] =
+                    type(uint128).max - _poolBalances()[IPool(pool)][poolData.lpTokens[i]].poolHalf();
+            } else {
+                poolData.mintedLPTokens[i] = poolData.lpTokens[i].totalSupply();
+            }
+        }
+        poolData.poolParams = IPool(pool).poolParams();
+    }
+
+    function queryPool(address pool) external returns (PoolData memory ret) {
+        _queryPool(pool, ret);
     }
 }

@@ -30,10 +30,9 @@ contract UpgradeScript is Script {
         uint256 deployerPrivateKey = vm.envUint("VELOCORE_DEPLOYER");
         vm.startBroadcast(deployerPrivateKey);
 
-        VoterFactory vf =
-        new VoterFactory(IVault(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535), toToken(IERC20(0xAeC06345b26451bdA999d83b361BEaaD6eA93F87)));
-        IERC20(0xAeC06345b26451bdA999d83b361BEaaD6eA93F87).approve(address(vf), 213745e18);
-        vf.deploy(0x12a79E67ed7f4fd0a0318d331941800898DAB30d, 213745e18);
+        VoterFactory vf = VoterFactory(0x4e6db87cd059E0F95Ce36508B89775Bc7aa995FC);
+        IERC20(0xAeC06345b26451bdA999d83b361BEaaD6eA93F87).approve(address(vf), 150000e18);
+        vf.deploy(0xe3CDa0A0896b70F0eBC6A1848096529AA7AEe9eE, 150000e18);
         vm.stopBroadcast();
     }
 }

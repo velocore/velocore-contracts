@@ -35,10 +35,10 @@ contract UpgradeScript is Script {
         AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_addFacet(
             new AdminFacet(IAuthorizer(0x0978112d4Ea277aD7fbf9F89268DEEdDeB743996), address(0))
         );
-        */
         AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_addFacet(
             new SwapFacet(VC(0xcc22F6AA610D1b2a0e89EF228079cB3e1831b1D1), toToken(IERC20(0xAeC06345b26451bdA999d83b361BEaaD6eA93F87)))
         );
+        */
         AdminFacet(0x1d0188c4B276A09366D05d6Be06aF61a73bC7535).admin_addFacet(
             new SwapHelperFacet(ConstantProductPoolFactory(0xBe6c6A389b82306e88d74d1692B67285A9db9A47))
         );

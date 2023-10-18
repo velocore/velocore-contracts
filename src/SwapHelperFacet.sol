@@ -16,6 +16,7 @@ import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 contract SwapHelperFacet is VaultStorage, IFacet {
     using UncheckedMemory for Token[];
+    using PoolBalanceLib for PoolBalance;
 
     address immutable thisImplementation;
     ConstantProductPoolFactory public immutable factory;

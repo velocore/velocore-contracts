@@ -31,9 +31,7 @@ contract UpgradeScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        WombatPool(0x61cb3a0C59825464474Ebb287A3e7D2b9b59D093).setFee(0.0001e18);
-        WombatPool(0x131D56758351C9885862ADA09A6a7071735C83b3).setFee(0.0001e18);
-        WombatPool(0x1D312eedd57E8d43bcb6369E4b8f02d3C18AAf13).setFee(0.0001e18);
+        ConstantProductPool(0x2F6B65F3d866BB145aE4EfD76434e945CcEe37aD).setParam(0.003e9, 4294955811);
         // add voterfactory
         vm.stopBroadcast();
     }
