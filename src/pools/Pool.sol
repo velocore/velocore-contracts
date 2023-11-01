@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "src/lib/Token.sol";
-import "src/lib/PoolBalanceLib.sol";
-import "src/lib/UncheckedMemory.sol";
-import "src/interfaces/IVault.sol";
-import "src/interfaces/ISwap.sol";
-import "src/interfaces/IAuthorizer.sol";
-import "src/VaultStorage.sol";
+import "contracts/lib/Token.sol";
+import "contracts/lib/PoolBalanceLib.sol";
+import "contracts/lib/UncheckedMemory.sol";
+import "contracts/interfaces/IVault.sol";
+import "contracts/interfaces/ISwap.sol";
+import "contracts/interfaces/IAuthorizer.sol";
+import "contracts/VaultStorage.sol";
 import "./Satellite.sol";
 
 /**

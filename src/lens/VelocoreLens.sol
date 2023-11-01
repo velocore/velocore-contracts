@@ -1,11 +1,11 @@
-import "src/lib/Token.sol";
-import "src/lib/PoolBalanceLib.sol";
-import "src/pools/Pool.sol";
-import "src/pools/constant-product/ConstantProductPoolFactory.sol";
-import "src/pools/wombat/WombatPool.sol";
-import "src/pools/wombat/WombatRegistry.sol";
-import "src/pools/vc/VC.sol";
-import "src/VaultStorage.sol";
+import "contracts/lib/Token.sol";
+import "contracts/lib/PoolBalanceLib.sol";
+import "contracts/pools/Pool.sol";
+import "contracts/pools/constant-product/ConstantProductPoolFactory.sol";
+import "contracts/pools/wombat/WombatPool.sol";
+import "contracts/pools/wombat/WombatRegistry.sol";
+import "contracts/pools/vc/VC.sol";
+import "contracts/VaultStorage.sol";
 
 struct BribeData {
     Token[] tokens;
@@ -205,10 +205,10 @@ contract VelocoreLens is VaultStorage {
         external
         returns (GaugeData[] memory gaugeDataArray)
     {
-        ConstantProductPool[] memory pools = factory.getPools(begin, maxLength);
-        gaugeDataArray = new GaugeData[](pools.length);
-        for (uint256 i = 0; i < pools.length; i++) {
-            _queryGauge(address(pools[i]), user, gaugeDataArray[i]);
+        ConstantProductPool[] memory pools = factory.getPools(0, begin + maxLength);
+        gaugeDataArray = new GaugeData[](Math.min(maxLength, begin >= pools.length ? 0 : pools.length - begin));
+        for (uint256 i = begin; i < begin + maxLength && i < pools.length; i++) {
+            _queryGauge(address(pools[i]), user, gaugeDataArray[i - begin]);
         }
     }
 
@@ -227,7 +227,7 @@ contract VelocoreLens is VaultStorage {
         gaugeData.killed = g.lastBribeUpdate == 1;
         gaugeData.totalVotes = g.totalVotes;
         gaugeData.userVotes = g.userVotes[user];
-        if (_e().totalVotes > 0) {
+        if (_e().totalVotes > 0 && !gaugeData.killed) {
             gaugeData.emissionRate = vc.emissionRate() * gaugeData.totalVotes / _e().totalVotes;
             gaugeData.userEmissionRate = gaugeData.emissionRate * IGauge(gauge).emissionShare(user) / 1e18;
         }
@@ -286,25 +286,25 @@ contract VelocoreLens is VaultStorage {
                 }
 
                 gaugeData.bribes[i].userClaimable = new uint256[](gaugeData.bribes[i].tokens.length);
-                (
+                try IBribe(bribes.at(i)).velocore__bribe(IGauge(gauge), elapsed) returns (
                     Token[] memory bribeTokens,
                     int128[] memory deltaGauge,
                     int128[] memory deltaPool,
                     int128[] memory deltaExternal
-                ) = IBribe(bribes.at(i)).velocore__bribe(IGauge(gauge), elapsed);
-
-                for (uint256 j = 0; j < bribeTokens.length; j++) {
-                    uint256 netDelta = uint256(-int256(deltaGauge[j] + deltaPool[j] + deltaExternal[j]));
-                    Token token = bribeTokens[j];
-                    require(deltaExternal[j] <= 0);
-                    _modifyPoolBalance(IBribe(bribes.at(i)), token, deltaGauge[j], deltaPool[j], deltaExternal[j]);
-                    Rewards storage r = g.rewards[IBribe(bribes.at(i))][token];
-                    if (g.totalVotes > 0) {
-                        r.current += netDelta * 1e18 / g.totalVotes;
+                ) {
+                    for (uint256 j = 0; j < bribeTokens.length; j++) {
+                        uint256 netDelta = uint256(-int256(deltaGauge[j] + deltaPool[j] + deltaExternal[j]));
+                        Token token = bribeTokens[j];
+                        //require(deltaExternal[j] <= 0);
+                        //_modifyPoolBalance(IBribe(bribes.at(i)), token, deltaGauge[j], deltaPool[j], deltaExternal[j]);
+                        Rewards storage r = g.rewards[IBribe(bribes.at(i))][token];
+                        if (g.totalVotes > 0) {
+                            r.current += netDelta * 1e18 / g.totalVotes;
+                        }
+                        gaugeData.bribes[i].userClaimable[j] =
+                            (r.current - r.snapshots[user]) * uint256(g.userVotes[user]) / 1e18;
                     }
-                    gaugeData.bribes[i].userClaimable[j] =
-                        (r.current - r.snapshots[user]) * uint256(g.userVotes[user]) / 1e18;
-                }
+                } catch {}
             }
         }
     }
@@ -400,8 +400,13 @@ contract VelocoreLens is VaultStorage {
         }
     }
 
-    function getPoolBalance(IPool poolAddr, Token token) external view returns (uint256) {
-        return _poolBalances()[poolAddr][token].poolHalf();
+    function emissionRate(IGauge gauge) external returns (uint256) {
+        GaugeInformation storage g = _e().gauges[IGauge(gauge)];
+        return vc.emissionRate() * g.totalVotes / _e().totalVotes;
+    }
+
+    function getPoolBalance(address pool, Token t) external view returns (uint256) {
+        return _poolBalances()[IPool(pool)][t].poolHalf();
     }
 
     function _queryPool(address pool, PoolData memory poolData) internal {

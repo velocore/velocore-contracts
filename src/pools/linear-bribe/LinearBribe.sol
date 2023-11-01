@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import "src/interfaces/IBribe.sol";
-import "src/interfaces/IVault.sol";
-import "src/lib/Token.sol";
-import "src/lib/UncheckedMemory.sol";
-import "src/lib/PoolBalanceLib.sol";
-import "src/pools/Pool.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "contracts/interfaces/IBribe.sol";
+import "contracts/interfaces/IVault.sol";
+import "contracts/lib/Token.sol";
+import "contracts/lib/UncheckedMemory.sol";
+import "contracts/lib/PoolBalanceLib.sol";
+import "contracts/pools/Pool.sol";
 
 struct Emission {
     uint128 per_second;

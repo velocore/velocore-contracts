@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "src/interfaces/IVC.sol";
-import "src/lib/RPow.sol";
-import "src/pools/PoolWithLPToken.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import "contracts/interfaces/IVC.sol";
+import "contracts/lib/RPow.sol";
+import "contracts/pools/PoolWithLPToken.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../SatelliteUpgradeable.sol";
 
 interface IVotingEscrow {
@@ -38,9 +38,18 @@ contract VeVC is PoolWithLPToken, ISwap, SatelliteUpgradeable {
 
     function initialize() external {
         if (!initialized) {
-            PoolWithLPToken._initialize("Locked LVC", "veLVC");
+            PoolWithLPToken._initialize("Locked VC", "veVC");
             initialized = true;
         }
+    }
+
+    function isValid(uint256 id) internal pure returns (bool) {
+        if (id > 739) return true;
+        if (id == 401 || id == 695 || id == 781 || id == 634 || id == 739) return false;
+        if (id >= 330 && id <= 348) return (id != 330 && id != 331 && id != 343 && id != 345 && id != 348);
+        if (id <= 13) return (id != 3 && id != 11 && id != 13);
+
+        return true;
     }
 
     function velocore__execute(address user, Token[] calldata tokens, int128[] memory r, bytes calldata)
@@ -67,6 +76,7 @@ contract VeVC is PoolWithLPToken, ISwap, SatelliteUpgradeable {
                 require(r[i] == 1, "wrong amount");
                 require(t.addr() == address(oldVeVC), "unsupported token");
                 require(t.spec() == TokenSpec.ERC721, "unsupported token");
+                require(isValid(t.id()), "please contact us");
                 int128 amt = oldVeVC.locked(t.id()).amount;
                 require(amt >= 0, "negative veNFT");
                 deltaPool[i] += 1;

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.19;
 
 import "../PoolWithLPToken.sol";
-import "src/lib/RPow.sol";
-import "src/interfaces/IVC.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import "contracts/lib/RPow.sol";
+import "contracts/interfaces/IVC.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../SatelliteUpgradeable.sol";
 
 /**

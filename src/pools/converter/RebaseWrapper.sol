@@ -2,13 +2,13 @@
 pragma solidity ^0.8.19;
 
 import "../PoolWithLPToken.sol";
-import "src/lib/RPow.sol";
-import "src/interfaces/IConverter.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
-import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import "contracts/lib/RPow.sol";
+import "contracts/interfaces/IConverter.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 // un
 contract RebaseWrapper is IConverter, Pool, ReentrancyGuard, ERC20 {

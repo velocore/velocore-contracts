@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import {SD59x18, sd, exp2, log2, convert, pow, intoInt256} from "lib/prb-math/src/SD59x18.sol";
-import "src/lib/Token.sol";
-import "src/lib/UncheckedMemory.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SD59x18, sd, exp2, log2, convert, pow, intoInt256} from "@prb/math/src/SD59x18.sol";
+import "contracts/lib/Token.sol";
+import "contracts/lib/UncheckedMemory.sol";
 import "./ConstantProductPool.sol";
 
 // a contract for performing fallback swap

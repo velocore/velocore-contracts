@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/lib/Token.sol";
-import "src/interfaces/IVault.sol";
-import "src/interfaces/IGauge.sol";
-import "src/lib/PoolBalanceLib.sol";
-import "src/interfaces/IGauge.sol";
-import "src/interfaces/IBribe.sol";
-import "src/interfaces/IAuthorizer.sol";
-import "src/pools/Satellite.sol";
-import "openzeppelin-contracts/contracts/utils/structs/BitMaps.sol";
-import "openzeppelin-contracts/contracts/utils/StorageSlot.sol";
-import "openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import "contracts/lib/Token.sol";
+import "contracts/interfaces/IVault.sol";
+import "contracts/interfaces/IGauge.sol";
+import "contracts/lib/PoolBalanceLib.sol";
+import "contracts/interfaces/IGauge.sol";
+import "contracts/interfaces/IBribe.sol";
+import "contracts/interfaces/IAuthorizer.sol";
+import "contracts/pools/Satellite.sol";
+import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
+import "@openzeppelin/contracts/utils/StorageSlot.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract Voter is Satellite {
     using TokenLib for Token;
@@ -50,11 +50,6 @@ contract Voter is Satellite {
 
     function changeOwner(address newOwner) external {
         require(msg.sender == owner, "not owner");
-        owner = newOwner;
-        emit Owner(newOwner);
-    }
-
-    function sudo_changeOwner(address newOwner) external authenticate {
         owner = newOwner;
         emit Owner(newOwner);
     }

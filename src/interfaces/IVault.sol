@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/interfaces/IAuthorizer.sol";
-import "src/interfaces/IFacet.sol";
-import "src/interfaces/IGauge.sol";
-import "src/interfaces/IConverter.sol";
-import "src/interfaces/IBribe.sol";
-import "src/interfaces/ISwap.sol";
-import "src/lib/Token.sol";
+import "contracts/interfaces/IAuthorizer.sol";
+import "contracts/interfaces/IFacet.sol";
+import "contracts/interfaces/IGauge.sol";
+import "contracts/interfaces/IConverter.sol";
+import "contracts/interfaces/IBribe.sol";
+import "contracts/interfaces/ISwap.sol";
+import "contracts/lib/Token.sol";
 
 bytes32 constant SSLOT_HYPERCORE_TREASURY = bytes32(uint256(keccak256("hypercore.treasury")) - 1);
 bytes32 constant SSLOT_HYPERCORE_AUTHORIZER = bytes32(uint256(keccak256("hypercore.authorizer")) - 1);
@@ -181,7 +181,6 @@ interface IVault {
         int128 a3,
         bytes memory data
     ) external returns (int128[] memory);
-
 
     function getPair(address t0, address t1) external view returns (address);
 

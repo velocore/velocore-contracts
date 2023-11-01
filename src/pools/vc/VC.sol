@@ -2,9 +2,9 @@
 pragma solidity ^0.8.19;
 
 import "../PoolWithLPToken.sol";
-import "src/lib/RPow.sol";
-import "src/interfaces/IVC.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import "contracts/lib/RPow.sol";
+import "contracts/interfaces/IVC.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../SatelliteUpgradeable.sol";
 
 /**
@@ -66,10 +66,14 @@ contract VC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
      */
     function dispense() external onlyVault returns (uint256) {
         unchecked {
+            if (block.timestamp <= 1694995200) {
+                lastEmission = 1694995200;
+                return 0;
+            }
             if (_totalSupply >= 200_000_000e18) return 0;
             if (lastEmission == block.timestamp) return 0;
             uint256 decay1e18 = 1e18 - rpow(DECAY, block.timestamp - lastEmission, 1e18);
-            uint256 decayed = (decay1e18 * (200_000_000 * 1e18 - _totalSupply)) / 1e18;
+            uint256 decayed = (decay1e18 * (200_000_000e18 - _totalSupply)) / 1e18;
             lastEmission = uint128(block.timestamp);
             _totalSupply += uint128(decayed);
             _simulateMint(decayed);
@@ -81,6 +85,9 @@ contract VC is IVC, PoolWithLPToken, ISwap, SatelliteUpgradeable {
      * VC emission rate per second
      */
     function emissionRate() external view override returns (uint256) {
+        if (block.timestamp <= 1694995200) {
+            return 0;
+        }
         if (_totalSupply >= 200_000_000 * 1e18) return 0;
 
         uint256 a = ((200_000_000 * 1e18 - _totalSupply) * rpow(DECAY, block.timestamp - lastEmission, 1e18)) / 1e18;

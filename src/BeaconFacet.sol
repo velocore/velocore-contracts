@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/lib/Token.sol";
-import "src/lib/PoolBalanceLib.sol";
-import "src/interfaces/IPool.sol";
-import "src/interfaces/ISwap.sol";
-import "src/interfaces/IConverter.sol";
-import "src/interfaces/IVC.sol";
-import "src/interfaces/IVault.sol";
-import "src/interfaces/IFacet.sol";
-import "src/interfaces/IFactory.sol";
-import "src/VaultStorage.sol";
-import "src/pools/constant-product/ConstantProductPoolFactory.sol";
-import "src/pools/wombat/WombatRegistry.sol";
-import "src/lens/VelocoreLens.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import "contracts/lib/Token.sol";
+import "contracts/lib/PoolBalanceLib.sol";
+import "contracts/interfaces/IPool.sol";
+import "contracts/interfaces/ISwap.sol";
+import "contracts/interfaces/IConverter.sol";
+import "contracts/interfaces/IVC.sol";
+import "contracts/interfaces/IVault.sol";
+import "contracts/interfaces/IFacet.sol";
+import "contracts/interfaces/IFactory.sol";
+import "contracts/VaultStorage.sol";
+import "contracts/pools/constant-product/ConstantProductPoolFactory.sol";
+import "contracts/pools/wombat/WombatRegistry.sol";
+import "contracts/lens/VelocoreLens.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 uint256 constant GAUGE_FLAG_KILLED = 1;
 

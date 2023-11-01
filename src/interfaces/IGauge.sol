@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/lib/Token.sol";
-import "src/interfaces/IPool.sol";
+import "contracts/lib/Token.sol";
+import "contracts/interfaces/IPool.sol";
 
 /**
  * Gauges are just pools.

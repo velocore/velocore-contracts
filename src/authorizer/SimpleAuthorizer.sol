@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "openzeppelin-contracts/contracts/access/AccessControl.sol";
-import "src/interfaces/IAuthorizer.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "contracts/interfaces/IAuthorizer.sol";
 
 contract SimpleAuthorizer is IAuthorizer, AccessControl {
     constructor() {

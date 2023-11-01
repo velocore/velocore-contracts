@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import {SD59x18, sd, exp2, log2, convert, pow} from "lib/prb-math/src/SD59x18.sol";
-import "src/lib/Token.sol";
-import "src/lib/UncheckedMemory.sol";
-import "src/lib/PoolBalanceLib.sol";
-import {rpow} from "src/lib/RPow.sol";
-import "src/pools/SingleTokenGauge.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SD59x18, sd, exp2, log2, convert, pow} from "@prb/math/src/SD59x18.sol";
+import "contracts/lib/Token.sol";
+import "contracts/lib/UncheckedMemory.sol";
+import "contracts/lib/PoolBalanceLib.sol";
+import {rpow} from "contracts/lib/RPow.sol";
+import "contracts/pools/SingleTokenGauge.sol";
 import "./ConstantProductLibrary.sol";
 
 /**

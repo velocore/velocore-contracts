@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "src/pools/constant-product/ConstantProductLibrary.sol";
+import "contracts/pools/constant-product/ConstantProductLibrary.sol";
 import "../Satellite.sol";
 
 contract ConstantProductPoolFactory is Satellite {

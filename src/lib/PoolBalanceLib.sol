@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AUNLICENSED
 pragma solidity ^0.8.0;
 
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 // a pool's balances are stored as two uint128;
 // the only difference between them is that new emissions are credited into the gauge balance.

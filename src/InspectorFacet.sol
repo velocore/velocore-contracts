@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/lib/Token.sol";
-import "src/lib/PoolBalanceLib.sol";
-import "src/interfaces/IAuthorizer.sol";
-import "src/interfaces/IVC.sol";
-import "src/interfaces/IFacet.sol";
-import "src/VaultStorage.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import "contracts/lib/Token.sol";
+import "contracts/lib/PoolBalanceLib.sol";
+import "contracts/interfaces/IAuthorizer.sol";
+import "contracts/interfaces/IVC.sol";
+import "contracts/interfaces/IFacet.sol";
+import "contracts/VaultStorage.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 contract InspectorFacet is VaultStorage, IFacet {
     using EnumerableSet for EnumerableSet.Bytes32Set;

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.19;
 
 import "../PoolWithLPToken.sol";
-import "src/lib/RPow.sol";
-import "src/interfaces/IConverter.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
+import "contracts/lib/RPow.sol";
+import "contracts/interfaces/IConverter.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
 
 interface IUniswapPair {
     function burn(address to) external;
@@ -24,7 +24,7 @@ contract UniswapUnwrapper is IConverter, Pool {
         for (uint256 i = 0; i < t.length; i++) {
             Token token = t.u(i);
             int128 delta = r.u(i);
-            if (delta > 0) {
+            if (delta > 0 && delta != type(int128).max) {
                 token.transferFrom(address(this), token.addr(), uint256(int256(delta)));
                 IUniswapPair(token.addr()).burn(address(vault));
             }

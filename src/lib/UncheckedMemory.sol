@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AUNLICENSED
 pragma solidity ^0.8.0;
 
-import {Token} from "src/lib/Token.sol";
+import {Token} from "contracts/lib/Token.sol";
 
 // solidity by default perform bound check for every array access.
 // we define functions for unchecked access here

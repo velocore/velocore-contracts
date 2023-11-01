@@ -3,6 +3,12 @@
 // usually deployed by another contract.
 
 contract DumbProxy {
+    constructor(address impl) {
+        assembly {
+            sstore(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc, impl)
+        }
+    }
+
     fallback() external payable {
         assembly {
             let storageSlot := 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc
@@ -17,8 +23,6 @@ contract DumbProxy {
                 if success { return(0, returndatasize()) }
                 revert(0, returndatasize())
             }
-            // implementation not found; set one
-            sstore(storageSlot, mload(0))
         }
     }
 }

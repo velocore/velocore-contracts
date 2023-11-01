@@ -1,4 +1,4 @@
-import "src/lib/Token.sol";
+import "contracts/lib/Token.sol";
 
 pragma solidity ^0.8.19;
 

@@ -2,11 +2,11 @@
 pragma solidity ^0.8.19;
 
 import "./PoolWithLPToken.sol";
-import "src/interfaces/IGauge.sol";
-import "src/lib/RPow.sol";
-import "src/lib/UncheckedMemory.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import "openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import "contracts/interfaces/IGauge.sol";
+import "contracts/lib/RPow.sol";
+import "contracts/lib/UncheckedMemory.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @dev a base contract for gauges with single stakes.

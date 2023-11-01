@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/lib/Token.sol";
-import "src/lib/PoolBalanceLib.sol";
-import "src/interfaces/IPool.sol";
-import "src/interfaces/ISwap.sol";
-import "src/interfaces/IConverter.sol";
-import "src/interfaces/IVC.sol";
-import "src/interfaces/IVault.sol";
-import "src/interfaces/IFacet.sol";
-import "src/VaultStorage.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import "contracts/lib/Token.sol";
+import "contracts/lib/PoolBalanceLib.sol";
+import "contracts/interfaces/IPool.sol";
+import "contracts/interfaces/ISwap.sol";
+import "contracts/interfaces/IConverter.sol";
+import "contracts/interfaces/IVC.sol";
+import "contracts/interfaces/IVault.sol";
+import "contracts/interfaces/IFacet.sol";
+import "contracts/VaultStorage.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 uint256 constant GAUGE_FLAG_KILLED = 1;
 
@@ -296,7 +296,9 @@ contract SwapFacet is VaultStorage, IFacet {
                     deltaVote = opAmounts.u(ballotIndex);
                     if (deltaVote != type(int128).max) {
                         gauge.totalVotes = (int256(uint256(gauge.totalVotes)) + deltaVote).toUint256().toUint112();
-                        _e().totalVotes = (int256(uint256(_e().totalVotes)) + deltaVote).toUint256().toUint128();
+                        if (gauge.lastBribeUpdate != 1) {
+                            _e().totalVotes = (int256(uint256(_e().totalVotes)) + deltaVote).toUint256().toUint128();
+                        }
                         gauge.userVotes[user] =
                             (int256(uint256(gauge.userVotes[user])) + deltaVote).toUint256().toUint128();
                         cumDelta[_binarySearchM(tokenRef, ballot)] -= deltaVote;

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "./Pool.sol";
-import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
 
 abstract contract SatelliteUpgradeable is Satellite, ERC1967Upgrade {
     function upgradeTo(address newImplementation) external authenticate {

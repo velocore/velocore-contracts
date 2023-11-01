@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/lib/Token.sol";
-import "src/lib/PoolBalanceLib.sol";
-import "src/interfaces/IPool.sol";
-import "src/interfaces/ISwap.sol";
-import "src/interfaces/IConverter.sol";
-import "src/interfaces/IVC.sol";
-import "src/interfaces/IVault.sol";
-import "src/interfaces/IFacet.sol";
-import "src/VaultStorage.sol";
-import "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import "contracts/lib/Token.sol";
+import "contracts/lib/PoolBalanceLib.sol";
+import "contracts/interfaces/IPool.sol";
+import "contracts/interfaces/ISwap.sol";
+import "contracts/interfaces/IConverter.sol";
+import "contracts/interfaces/IVC.sol";
+import "contracts/interfaces/IVault.sol";
+import "contracts/interfaces/IFacet.sol";
+import "contracts/VaultStorage.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  * @dev a Facet for handling swap, stake and vote logic.
@@ -96,8 +96,13 @@ contract SwapAuxillaryFacet is VaultStorage, IFacet {
 
     function killGauge(IGauge gauge, bool kill) external authenticate {
         // we use (lastBribeUpdate == 1) to represent killed bribes.
-        if (kill) _e().gauges[gauge].lastBribeUpdate = 1;
-        else if (!kill) _e().gauges[gauge].lastBribeUpdate = uint32(block.timestamp);
+        if (kill && _e().gauges[gauge].lastBribeUpdate != 1) {
+            _e().gauges[gauge].lastBribeUpdate = 1;
+            _e().totalVotes -= _e().gauges[gauge].totalVotes;
+        } else if (!kill && _e().gauges[gauge].lastBribeUpdate == 1) {
+            _e().gauges[gauge].lastBribeUpdate = uint32(block.timestamp);
+            _e().totalVotes += _e().gauges[gauge].totalVotes;
+        }
         emit GaugeKilled(gauge, kill);
     }
 

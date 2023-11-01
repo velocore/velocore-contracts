@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/interfaces/IVault.sol";
-import "src/VaultStorage.sol";
-import "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
+import "contracts/interfaces/IVault.sol";
+import "contracts/VaultStorage.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
 
 contract Lens is VaultStorage {
     address lensImplementation;

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "src/interfaces/IVault.sol";
-import "src/lib/Token.sol";
+import "contracts/interfaces/IVault.sol";
+import "contracts/lib/Token.sol";
 import "./Pool.sol";
 
 /**

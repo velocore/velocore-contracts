@@ -2,8 +2,8 @@
 pragma solidity ^0.8.19;
 
 import "./VaultStorage.sol";
-import "openzeppelin-contracts/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-import "openzeppelin-contracts/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 contract NFTHolderFacet is VaultStorage, IFacet, ERC1155Holder, ERC721Holder {
     address immutable thisImplementation;
